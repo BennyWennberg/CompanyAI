@@ -31,8 +31,30 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('userName');
     navigate('/login');
   };
+
+  const getUserInfo = () => {
+    const userName = localStorage.getItem('userName') || 'User';
+    const userRole = localStorage.getItem('userRole') || 'guest';
+    
+    const roleMap: Record<string, string> = {
+      'admin': 'Administrator',
+      'hr_manager': 'HR Manager', 
+      'hr_specialist': 'HR Specialist',
+      'guest': 'Gast'
+    };
+    
+    return {
+      name: userName,
+      role: roleMap[userRole] || userRole,
+      initials: userName.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'
+    };
+  };
+
+  const userInfo = getUserInfo();
 
   return (
     <header className="main-header">
@@ -54,11 +76,11 @@ const Header: React.FC = () => {
       <div className="header-right">
         <div className="user-info">
           <div className="user-details">
-            <span className="user-name">HR Manager</span>
-            <span className="user-role">Vollzugriff</span>
+            <span className="user-name">{userInfo.name}</span>
+            <span className="user-role">{userInfo.role}</span>
           </div>
           <div className="user-avatar">
-            HM
+            {userInfo.initials}
           </div>
         </div>
         

@@ -96,7 +96,7 @@ export function requireAuth(req: AuthenticatedRequest, res: any, next: any) {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       success: false,
-      error: 'Authentication required',
+      error: 'AuthenticationRequired',
       message: 'Bitte geben Sie einen gültigen Authorization Header an'
     });
   }
@@ -107,7 +107,7 @@ export function requireAuth(req: AuthenticatedRequest, res: any, next: any) {
   if (!user) {
     return res.status(401).json({
       success: false,
-      error: 'Invalid token',
+      error: 'InvalidToken',
       message: 'Ungültiger oder abgelaufener Token'
     });
   }
@@ -127,7 +127,7 @@ export function requirePermission(
     if (!req.user) {
       return res.status(401).json({
         success: false,
-        error: 'Authentication required',
+        error: 'AuthenticationRequired',
         message: 'Authentifizierung erforderlich'
       });
     }
@@ -135,7 +135,7 @@ export function requirePermission(
     if (!hasPermission(req.user, action, resource)) {
       return res.status(403).json({
         success: false,
-        error: 'Insufficient permissions',
+        error: 'InsufficientPermissions',
         message: `Keine Berechtigung für ${action} auf ${resource}`
       });
     }

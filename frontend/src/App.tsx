@@ -1,4 +1,4 @@
-import React from 'react';
+// React import removed - not needed in modern React with JSX Transform
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import LoginPage from './modules/auth/LoginPage';
 import HRModule from './modules/hr/HRModule';
 import SupportModule from './modules/support/SupportModule';
+import RequireAuth from './components/RequireAuth';
 import './App.css';
 
 function App() {
@@ -22,21 +23,27 @@ function App() {
           
           {/* Protected Routes with Layout */}
           <Route path="/" element={
-            <MainLayout>
-              <Dashboard />
-            </MainLayout>
+            <RequireAuth>
+              <MainLayout>
+                <Dashboard />
+              </MainLayout>
+            </RequireAuth>
           } />
           
           <Route path="/hr/*" element={
-            <MainLayout>
-              <HRModule />
-            </MainLayout>
+            <RequireAuth>
+              <MainLayout>
+                <HRModule />
+              </MainLayout>
+            </RequireAuth>
           } />
           
           <Route path="/support/*" element={
-            <MainLayout>
-              <SupportModule />
-            </MainLayout>
+            <RequireAuth>
+              <MainLayout>
+                <SupportModule />
+              </MainLayout>
+            </RequireAuth>
           } />
           
           {/* Default redirect */}

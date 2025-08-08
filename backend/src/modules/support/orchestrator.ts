@@ -8,7 +8,7 @@ import {
 } from './types';
 
 import { createTicket, searchTickets, updateTicket } from './functions/manageTickets';
-import { AuthenticatedRequest } from '../hr/core/auth'; // Wiederverwendung der HR-Auth
+import { AuthenticatedRequest, requirePermission, logAuthEvent } from '../hr/core/auth'; // Wiederverwendung der HR-Auth
 
 /**
  * Support-Orchestrator - Koordiniert Support-Funktionen
@@ -21,6 +21,10 @@ export class SupportOrchestrator {
   static async handleCreateTicket(req: AuthenticatedRequest, res: Response) {
     try {
       const request: CreateTicketRequest = req.body;
+      const userId = req.user?.id || 'unknown';
+
+      // Log the action
+      logAuthEvent(userId, 'create_ticket', 'tickets');
 
       const result = await createTicket(request);
 
@@ -34,7 +38,7 @@ export class SupportOrchestrator {
       console.error('Fehler beim Erstellen des Tickets:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Ticket konnte nicht erstellt werden'
       });
     }
@@ -55,6 +59,9 @@ export class SupportOrchestrator {
         offset: req.query.offset ? parseInt(req.query.offset as string) : undefined
       };
 
+      const userId = req.user?.id || 'unknown';
+      logAuthEvent(userId, 'search_tickets', 'tickets');
+
       const result = await searchTickets(request);
 
       if (result.success) {
@@ -67,7 +74,7 @@ export class SupportOrchestrator {
       console.error('Fehler bei der Ticket-Suche:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Tickets konnten nicht gesucht werden'
       });
     }
@@ -80,6 +87,9 @@ export class SupportOrchestrator {
     try {
       const { ticketId } = req.params;
       const updates: UpdateTicketRequest = req.body;
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'update_ticket', 'tickets');
 
       const result = await updateTicket(ticketId, updates);
 
@@ -93,7 +103,7 @@ export class SupportOrchestrator {
       console.error('Fehler beim Aktualisieren des Tickets:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Ticket konnte nicht aktualisiert werden'
       });
     }
@@ -101,10 +111,21 @@ export class SupportOrchestrator {
 }
 
 /**
- * Registriert Support-Routes
+ * Registriert Support-Routes mit Authentifizierung und Autorisierung
  */
 export function registerSupportRoutes(router: any) {
-  router.post('/support/tickets', SupportOrchestrator.handleCreateTicket);
-  router.get('/support/tickets', SupportOrchestrator.handleSearchTickets);
-  router.put('/support/tickets/:ticketId', SupportOrchestrator.handleUpdateTicket);
+  router.post('/support/tickets', 
+    requirePermission('write', 'all'),
+    SupportOrchestrator.handleCreateTicket
+  );
+  
+  router.get('/support/tickets', 
+    requirePermission('read', 'all'),
+    SupportOrchestrator.handleSearchTickets
+  );
+  
+  router.put('/support/tickets/:ticketId', 
+    requirePermission('write', 'all'),
+    SupportOrchestrator.handleUpdateTicket
+  );
 }

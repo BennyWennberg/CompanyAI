@@ -7,10 +7,35 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unveröffentlicht]
 ### Geplant
-- Frontend-Integration für HR-Modul
 - Datenbank-Integration (PostgreSQL/MongoDB)
 - Automatisierte Tests (Jest/Supertest)
 - Produktion-Modul Implementation
+- Erweiterte Sicherheitsfeatures (Rate Limiting, Input Sanitization)
+
+## [2.1.0] - 2024-12-08
+
+### 🔧 Verbesserungen - Grundkonstrukt-Optimierung
+- **Auth-Guard hinzugefügt**: RequireAuth-Komponente schützt alle geschützten Routen
+- **Support-Module Security**: requirePermission Middleware für alle Support-Endpunkte
+- **Dynamic Header**: User-Info wird dynamisch aus localStorage geladen
+- **Ticket-Validierung**: Vollständige Input-Validierung für Support-Tickets
+- **Error-Standardisierung**: Einheitliche englische Error-Typen + deutsche Messages
+- **Monorepo-Setup**: npm workspaces für besseres Dependency-Management
+- **Zentrales Error-Handling**: 404 und 500 Handler im Backend
+- **Port-Standardisierung**: Vite auf Standard-Port 5173
+- **Router-Cleanup**: Veraltete @types/react-router-dom entfernt
+
+### 🛡️ Sicherheit
+- Alle Support-Endpunkte nun mit Berechtigungsprüfung
+- Auth-Guard verhindert unbefugten Zugriff auf geschützte Bereiche
+- Strukturierte Error-Responses ohne sensitive Details
+- Vollständige Request-Validierung für Support-Tickets
+
+### 🚀 Developer Experience
+- npm workspaces Setup für einfachere Entwicklung
+- Einheitliche Error-Typen für bessere API-Konsistenz
+- Zentrales Error-Handling für robustere Anwendung
+- Port-Konsistenz zwischen Konfiguration und Tests
 
 ## [2.0.0] - 2024-12-08
 
