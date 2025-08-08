@@ -129,7 +129,7 @@ export async function fetchEmployeeData(
     console.error('Fehler beim Laden der Mitarbeiterdaten:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Mitarbeiterdaten konnten nicht geladen werden'
     };
   }
@@ -145,7 +145,7 @@ export async function fetchEmployeeById(employeeId: string): Promise<APIResponse
     if (!employee) {
       return {
         success: false,
-        error: 'Mitarbeiter nicht gefunden',
+        error: 'NotFound',
         message: `Kein Mitarbeiter mit ID ${employeeId} gefunden`
       };
     }
@@ -160,7 +160,7 @@ export async function fetchEmployeeById(employeeId: string): Promise<APIResponse
     console.error('Fehler beim Laden des Mitarbeiters:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Mitarbeiter konnte nicht geladen werden'
     };
   }
@@ -178,7 +178,7 @@ export async function createEmployee(
     if (validationErrors.length > 0) {
       return {
         success: false,
-        error: 'Validierungsfehler',
+        error: 'ValidationError',
         message: validationErrors.join(', ')
       };
     }
@@ -204,7 +204,7 @@ export async function createEmployee(
     console.error('Fehler beim Erstellen des Mitarbeiters:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Mitarbeiter konnte nicht erstellt werden'
     };
   }
@@ -223,7 +223,7 @@ export async function updateEmployee(
     if (employeeIndex === -1) {
       return {
         success: false,
-        error: 'Mitarbeiter nicht gefunden',
+        error: 'NotFound',
         message: `Kein Mitarbeiter mit ID ${employeeId} gefunden`
       };
     }
@@ -239,7 +239,7 @@ export async function updateEmployee(
     if (validationErrors.length > 0) {
       return {
         success: false,
-        error: 'Validierungsfehler',
+        error: 'ValidationError',
         message: validationErrors.join(', ')
       };
     }
@@ -256,7 +256,7 @@ export async function updateEmployee(
     console.error('Fehler beim Aktualisieren des Mitarbeiters:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Mitarbeiter konnte nicht aktualisiert werden'
     };
   }
@@ -358,7 +358,7 @@ export async function getEmployeeStats(): Promise<APIResponse<{
     console.error('Fehler beim Laden der Statistiken:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Statistiken konnten nicht geladen werden'
     };
   }

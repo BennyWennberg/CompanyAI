@@ -161,7 +161,7 @@ export async function generateOnboardingPlan(
     console.error('Fehler beim Generieren des Onboarding-Plans:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Onboarding-Plan konnte nicht erstellt werden'
     };
   }
@@ -200,7 +200,7 @@ export async function updateOnboardingTask(
     console.error('Fehler beim Aktualisieren der Aufgabe:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Aufgabe konnte nicht aktualisiert werden'
     };
   }

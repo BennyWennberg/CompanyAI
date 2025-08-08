@@ -38,7 +38,7 @@ export class HROrchestrator {
       if (validationErrors.length > 0) {
         return res.status(400).json({
           success: false,
-          error: 'Validierungsfehler',
+          error: 'ValidationError',
           message: validationErrors.join(', ')
         });
       }
@@ -56,7 +56,7 @@ export class HROrchestrator {
       console.error('Fehler im Onboarding-Plan Handler:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Onboarding-Plan konnte nicht erstellt werden'
       });
     }
@@ -85,7 +85,7 @@ export class HROrchestrator {
       console.error('Fehler beim Aktualisieren der Onboarding-Aufgabe:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Aufgabe konnte nicht aktualisiert werden'
       });
     }
@@ -119,7 +119,7 @@ export class HROrchestrator {
       console.error('Fehler beim Laden der Mitarbeiterdaten:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Mitarbeiterdaten konnten nicht geladen werden'
       });
     }
@@ -147,7 +147,7 @@ export class HROrchestrator {
       console.error('Fehler beim Laden des Mitarbeiters:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Mitarbeiter konnte nicht geladen werden'
       });
     }
@@ -175,7 +175,7 @@ export class HROrchestrator {
       console.error('Fehler beim Erstellen des Mitarbeiters:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Mitarbeiter konnte nicht erstellt werden'
       });
     }
@@ -204,7 +204,7 @@ export class HROrchestrator {
       console.error('Fehler beim Aktualisieren des Mitarbeiters:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Mitarbeiter konnte nicht aktualisiert werden'
       });
     }
@@ -230,7 +230,7 @@ export class HROrchestrator {
       console.error('Fehler beim Laden der Statistiken:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Statistiken konnten nicht geladen werden'
       });
     }
@@ -259,7 +259,7 @@ export class HROrchestrator {
       console.error('Fehler beim Erstellen des HR-Reports:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'HR-Report konnte nicht erstellt werden'
       });
     }
@@ -288,7 +288,7 @@ export class HROrchestrator {
       console.error('Fehler beim Erstellen des detaillierten HR-Reports:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Detaillierter HR-Report konnte nicht erstellt werden'
       });
     }
@@ -347,7 +347,7 @@ export class HROrchestrator {
       console.error('Fehler beim Generieren der Test-Daten:', error);
       res.status(500).json({
         success: false,
-        error: 'Interner Server-Fehler',
+        error: 'InternalServerError',
         message: 'Test-Daten konnten nicht generiert werden'
       });
     }

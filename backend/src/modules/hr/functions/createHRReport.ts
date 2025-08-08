@@ -25,7 +25,7 @@ export async function createHRReport(
     if (validationErrors.length > 0) {
       return {
         success: false,
-        error: 'Validierungsfehler',
+        error: 'ValidationError',
         message: validationErrors.join(', ')
       };
     }
@@ -40,7 +40,7 @@ export async function createHRReport(
     if (!employeeDataResponse.success || !employeeDataResponse.data) {
       return {
         success: false,
-        error: 'Daten nicht verfügbar',
+        error: 'DataUnavailable',
         message: 'Mitarbeiterdaten konnten nicht abgerufen werden'
       };
     }
@@ -79,7 +79,7 @@ export async function createHRReport(
     console.error('Fehler beim Erstellen des HR-Reports:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'HR-Report konnte nicht erstellt werden'
     };
   }
@@ -244,7 +244,7 @@ export async function createDetailedHRReport(
     console.error('Fehler beim Erstellen des detaillierten HR-Reports:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Detaillierter HR-Report konnte nicht erstellt werden'
     };
   }

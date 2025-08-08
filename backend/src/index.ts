@@ -88,7 +88,32 @@ app.get('/', (req, res) => {
   });
 });
 
+// 404 Handler für unbekannte Routen
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'NotFound',
+    message: `Route ${req.method} ${req.path} nicht gefunden`
+  });
+});
+
+// Globaler Error Handler
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error('Unbehandelter Fehler:', err);
+  
+  // Verhindere Fehler-Details in Produktion
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  
+  res.status(err.status || 500).json({
+    success: false,
+    error: 'InternalServerError',
+    message: 'Ein unerwarteter Fehler ist aufgetreten',
+    ...(isDevelopment && { details: err.message, stack: err.stack })
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Backend läuft auf Port ${PORT}`);
   console.log(`📍 Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`📚 API Dokumentation: http://localhost:${PORT}/api/hello`);
 });

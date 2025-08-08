@@ -1,6 +1,6 @@
 # CompanyAI
 
-Eine einfache Anwendung mit React Frontend und Express Backend, beide mit TypeScript.
+Eine modulare Unternehmensanwendung mit React Frontend und Express Backend - vollständig typisiert mit TypeScript und optimiertem Grundkonstrukt.
 
 > 💡 **PowerShell ready**: npm scripts verwenden `&&` (kompatibel) + zusätzliches `.ps1` Script verfügbar
 
@@ -8,7 +8,7 @@ Eine einfache Anwendung mit React Frontend und Express Backend, beide mit TypeSc
 
 ### Alle Abhängigkeiten installieren
 
-**Option 1: npm script (empfohlen)**
+**npm script (empfohlen)**
 ```powershell
 npm run install:all
 ```
@@ -19,7 +19,7 @@ npm run dev
 ```
 
 Dies startet:
-- **Frontend**: http://localhost:3000 (React mit Vite) - 🚀 **Öffnet automatisch im Browser**
+- **Frontend**: http://localhost:5173 (React mit Vite) - 🚀 **Öffnet automatisch im Browser**
 - **Backend**: http://localhost:5000 (Express API)
 
 
@@ -47,10 +47,25 @@ Dies startet:
 ### PowerShell Scripts
 - `.\install-all.ps1` - PowerShell Script für Installation
 
-## 📍 API Endpoints
+## 🎯 Features (v2.1.0)
 
+### 🛡️ Sicherheit & Authentifizierung
+- **Auth-Guard**: Automatischer Redirect zu Login bei fehlendem Token
+- **Rollenbasierte Berechtigung**: Admin, HR Manager, HR Specialist
+- **Permission-basierte API-Endpunkte**: Alle Support-APIs geschützt
+- **Strukturiertes Error-Handling**: Einheitliche Error-Typen
+
+### 🏗️ Modulare Architektur
+- **HR-Modul**: Mitarbeiterverwaltung, Onboarding, Reports
+- **Support-Modul**: Ticket-Management mit Validierung
+- **Shared Auth**: Zentrale Authentifizierung für alle Module
+- **npm workspaces**: Optimiertes Monorepo-Setup
+
+### 📍 API Endpoints (11 gesicherte Endpunkte)
 - `GET /` - Backend Info
-- `GET /api/health` - Health Check
-- `GET /api/hello` - Test Endpoint
+- `GET /api/health` - Health Check 
+- `GET /api/hello` - API Dokumentation
+- **HR-APIs**: `/api/hr/*` (Employees, Stats, Reports, Onboarding)
+- **Support-APIs**: `/api/support/*` (Tickets mit CRUD)
 
 Das Frontend kann über `/api/*` auf das Backend zugreifen (Proxy konfiguriert).

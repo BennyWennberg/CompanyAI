@@ -41,10 +41,67 @@ const mockTickets: Ticket[] = [
 ];
 
 /**
+ * Validiert Ticket-Daten
+ */
+function validateTicketData(ticket: CreateTicketRequest): string[] {
+  const errors: string[] = [];
+
+  if (!ticket.title || ticket.title.trim().length === 0) {
+    errors.push('Titel ist erforderlich');
+  } else if (ticket.title.length > 200) {
+    errors.push('Titel darf maximal 200 Zeichen lang sein');
+  }
+
+  if (!ticket.description || ticket.description.trim().length === 0) {
+    errors.push('Beschreibung ist erforderlich');
+  } else if (ticket.description.length > 2000) {
+    errors.push('Beschreibung darf maximal 2000 Zeichen lang sein');
+  }
+
+  if (!ticket.category || !['technical', 'account', 'billing', 'general'].includes(ticket.category)) {
+    errors.push('Ungültige Kategorie');
+  }
+
+  if (!ticket.priority || !['low', 'medium', 'high', 'urgent'].includes(ticket.priority)) {
+    errors.push('Ungültige Priorität');
+  }
+
+  if (!ticket.customerId || ticket.customerId.trim().length === 0) {
+    errors.push('Kunden-ID ist erforderlich');
+  }
+
+  if (!ticket.customerEmail || ticket.customerEmail.trim().length === 0) {
+    errors.push('Kunden-E-Mail ist erforderlich');
+  } else if (!isValidEmail(ticket.customerEmail)) {
+    errors.push('Ungültige E-Mail-Adresse');
+  }
+
+  return errors;
+}
+
+/**
+ * Hilfsfunktion zur E-Mail-Validierung
+ */
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
  * Erstellt ein neues Support-Ticket
  */
 export async function createTicket(request: CreateTicketRequest): Promise<APIResponse<Ticket>> {
   try {
+    // Validierung
+    const validationErrors = validateTicketData(request);
+    if (validationErrors.length > 0) {
+      return {
+        success: false,
+        error: 'ValidationError',
+        message: validationErrors.join(', ')
+      };
+    }
+
     const newTicket: Ticket = {
       id: `ticket_${String(mockTickets.length + 1).padStart(3, '0')}`,
       ...request,
@@ -65,7 +122,7 @@ export async function createTicket(request: CreateTicketRequest): Promise<APIRes
     console.error('Fehler beim Erstellen des Tickets:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Ticket konnte nicht erstellt werden'
     };
   }
@@ -127,14 +184,14 @@ export async function searchTickets(request: TicketSearchRequest): Promise<APIRe
       message: `${paginatedTickets.length} Tickets gefunden`
     };
 
-  } catch (error) {
-    console.error('Fehler bei der Ticket-Suche:', error);
-    return {
-      success: false,
-      error: 'Interner Server-Fehler',
-      message: 'Tickets konnten nicht gesucht werden'
-    };
-  }
+      } catch (error) {
+      console.error('Fehler bei der Ticket-Suche:', error);
+      return {
+        success: false,
+        error: 'InternalServerError',
+        message: 'Tickets konnten nicht gesucht werden'
+      };
+    }
 }
 
 /**
@@ -147,7 +204,7 @@ export async function updateTicket(ticketId: string, updates: UpdateTicketReques
     if (ticketIndex === -1) {
       return {
         success: false,
-        error: 'Ticket nicht gefunden',
+        error: 'NotFound',
         message: `Kein Ticket mit ID ${ticketId} gefunden`
       };
     }
@@ -171,7 +228,7 @@ export async function updateTicket(ticketId: string, updates: UpdateTicketReques
     console.error('Fehler beim Aktualisieren des Tickets:', error);
     return {
       success: false,
-      error: 'Interner Server-Fehler',
+      error: 'InternalServerError',
       message: 'Ticket konnte nicht aktualisiert werden'
     };
   }
