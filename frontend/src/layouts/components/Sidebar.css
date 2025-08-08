@@ -1,0 +1,209 @@
+/* Sidebar - CompanyAI Module Navigation */
+
+.main-sidebar {
+  width: 280px;
+  background: #2d3748;
+  color: white;
+  overflow-y: auto;
+  border-right: 1px solid #4a5568;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-nav {
+  padding: 24px 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.nav-section {
+  padding: 0 16px;
+}
+
+.nav-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #a0aec0;
+  margin: 0 0 16px 0;
+  padding: 0 12px;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #e2e8f0;
+  transition: all 0.2s;
+  font-weight: 500;
+  position: relative;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.nav-link.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  min-width: 24px;
+  text-align: center;
+}
+
+.nav-text {
+  font-size: 0.9rem;
+}
+
+/* Submenu Styles */
+.submenu {
+  list-style: none;
+  margin: 8px 0 0 0;
+  padding: 0 0 0 12px;
+  border-left: 2px solid #4a5568;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.submenu-item {
+  position: relative;
+}
+
+.submenu-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #cbd5e0;
+  transition: all 0.2s;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.submenu-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+}
+
+.submenu-link.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-weight: 500;
+}
+
+.submenu-icon {
+  font-size: 1rem;
+  min-width: 16px;
+  text-align: center;
+}
+
+.submenu-text {
+  font-size: 0.85rem;
+}
+
+/* Module Status Section */
+.module-status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-indicator.hr {
+  background: #48bb78;
+  box-shadow: 0 0 6px rgba(72, 187, 120, 0.5);
+}
+
+.status-indicator.support {
+  background: #ed8936;
+  box-shadow: 0 0 6px rgba(237, 137, 54, 0.5);
+}
+
+.status-indicator.inactive {
+  background: #718096;
+}
+
+.status-text {
+  font-size: 0.8rem;
+  color: #a0aec0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  
+  .sidebar-nav {
+    padding: 16px 0;
+    flex-direction: row;
+    gap: 16px;
+    overflow-x: auto;
+  }
+  
+  .nav-section {
+    padding: 0 8px;
+    min-width: max-content;
+  }
+  
+  .nav-list {
+    flex-direction: row;
+    gap: 8px;
+  }
+  
+  .submenu {
+    display: none;
+  }
+  
+  .nav-text, .submenu-text {
+    display: none;
+  }
+  
+  .nav-link {
+    min-width: 48px;
+    justify-content: center;
+  }
+}
