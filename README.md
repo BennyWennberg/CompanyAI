@@ -13,18 +13,6 @@ Eine einfache Anwendung mit React Frontend und Express Backend, beide mit TypeSc
 npm run install:all
 ```
 
-**Option 2: PowerShell Script**
-```powershell
-.\install-all.ps1
-```
-
-**Option 3: Einzeln installieren**
-```powershell
-npm run install:root
-npm run install:frontend  
-npm run install:backend
-```
-
 ### Entwicklungsserver starten (Frontend + Backend gleichzeitig)
 ```powershell
 npm run dev
@@ -34,22 +22,6 @@ Dies startet:
 - **Frontend**: http://localhost:3000 (React mit Vite) - 🚀 **Öffnet automatisch im Browser**
 - **Backend**: http://localhost:5000 (Express API)
 
-## 📁 Projektstruktur
-
-```
-CompanyAI/
-├── frontend/          # React + TypeScript Frontend
-│   ├── src/
-│   │   ├── App.tsx    # Hauptkomponente (weiße Seite mit "CompanyAI" in der Mitte)
-│   │   ├── main.tsx   # React Entry Point
-│   │   └── *.css      # Styling
-│   └── package.json
-├── backend/           # Express + TypeScript Backend  
-│   ├── src/
-│   │   └── index.ts   # Express Server
-│   └── package.json
-└── package.json       # Root-Konfiguration für beide Services
-```
 
 ## 🛠️ Verfügbare Scripts
 
