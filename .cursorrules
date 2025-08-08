@@ -1,0 +1,587 @@
+# CompanyAI - Modulbasierte Architektur Regeln
+
+## Modulstruktur Standards
+
+Befolge IMMER diese modulbasierte Ordnerstruktur für alle Module in `backend/src/modules/`:
+
+### Pflicht-Struktur für jedes neue Modul:
+```
+backend/src/modules/[module-name]/
+├── orchestrator.ts        # PFLICHT: API-Route-Handler und Koordination
+├── types.ts              # PFLICHT: TypeScript-Interfaces und Typen
+├── core/                 # OPTIONAL: Wiederverwendbare Hilfslogik
+│   └── [helper-files].ts # z.B. auth.ts, utils.ts, validators.ts
+└── functions/            # PFLICHT: Geschäftslogik-Funktionen
+    ├── [function1].ts    # Eine Funktion pro Datei
+    ├── [function2].ts    # Klare, beschreibende Namen
+    └── [function3].ts    # Export von async functions
+```
+
+## Datei-Standards
+
+### 1. types.ts - IMMER enthalten:
+```typescript
+// Input-Request-Typen
+export interface Create[Entity]Request { ... }
+export interface Update[Entity]Request { ... }
+export interface Search[Entity]Request { ... }
+
+// Entity-Typen
+export interface [Entity] { 
+  id: string;
+  // weitere Properties
+}
+
+// Response-Typen
+export interface APIResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+```
+
+### 2. orchestrator.ts - IMMER enthalten:
+```typescript
+import { Request, Response } from 'express';
+import { AuthenticatedRequest } from '../hr/core/auth'; // Zentrale Auth nutzen
+
+export class [Module]Orchestrator {
+  static async handle[Action](req: AuthenticatedRequest, res: Response) {
+    // Handler-Implementation
+  }
+}
+
+export function register[Module]Routes(router: any) {
+  // Route-Registrierung
+}
+```
+
+### 3. functions/[function].ts - Eine Funktion pro Datei:
+```typescript
+import { [Entity], [Request]Type, APIResponse } from '../types';
+
+export async function [functionName](
+  request: [Request]Type
+): Promise<APIResponse<[Entity]>> {
+  try {
+    // Implementation
+    return { success: true, data: result, message: 'Success' };
+  } catch (error) {
+    return { success: false, error: 'Error', message: 'Failed' };
+  }
+}
+```
+
+## Integration-Standards
+
+### Neue Module MÜSSEN in backend/src/index.ts registriert werden:
+1. Import hinzufügen: `import { register[Module]Routes } from './modules/[module]/orchestrator';`
+2. Route registrieren: `register[Module]Routes(apiRouter);`
+3. Module-Liste aktualisieren in health/hello endpoints
+4. Dokumentation in availableModules ergänzen
+
+### Authentifizierung - IMMER nutzen:
+- Import: `import { AuthenticatedRequest, requireAuth, requirePermission } from '../hr/core/auth';`
+- Für geschützte Routes: `requireAuth` oder `requirePermission(action, resource)`
+- Logging: `logAuthEvent(userId, action, resource)`
+
+## Naming Conventions
+
+### Module-Namen:
+- Kleinschreibung mit Bindestrichen: `hr`, `support`, `user-management`
+- Beschreibende Namen, nicht zu allgemein
+
+### API-Routen:
+- RESTful: `/api/[module]/[entities]`
+- Beispiele: `/api/hr/employees`, `/api/support/tickets`
+
+### Funktions-Namen:
+- Verben verwenden: `createEmployee`, `fetchTickets`, `generateReport`
+- Async functions für alle Geschäftslogik
+- Klare, beschreibende Namen
+
+### Datei-Namen:
+- camelCase für Functions: `createHRReport.ts`, `manageTickets.ts`
+- Beschreibende Namen, die den Inhalt widerspiegeln
+
+## Code-Standards
+
+### Error Handling:
+```typescript
+try {
+  // Implementation
+  return { success: true, data: result, message: 'Success message' };
+} catch (error) {
+  console.error('Descriptive error message:', error);
+  return {
+    success: false,
+    error: 'User-friendly error type',
+    message: 'German error message for user'
+  };
+}
+```
+
+### Validation:
+- Immer Request-Daten validieren
+- Separate Validation-Funktionen erstellen
+- Früh validieren, früh zurückgeben bei Fehlern
+
+### Responses:
+- IMMER APIResponse<T> Format verwenden
+- Deutsche Fehlermeldungen für User
+- Englische Fehler-Types für Logging
+- Konsistente HTTP-Status-Codes
+
+## PowerShell Kompatibilität
+- Bevorzuge `;` statt `&&` in npm scripts
+- Erstelle .ps1 Scripts für Module-spezifische Tasks
+- Nutze PowerShell-freundliche Pfade
+
+## Dokumentation Standards
+
+### Jedes neue Modul MUSS dokumentiert werden:
+```
+docs/modules/[module-name]/
+├── README.md           # Vollständige Modul-Dokumentation
+├── API.md             # Detaillierte API-Dokumentation
+└── CHANGELOG.md       # Versionierung und Änderungen
+```
+
+## Dokumentations-Wartung (KRITISCH)
+
+### Bei JEDER Änderung in docs/ - UPDATE PFLICHT:
+
+#### 1. DOCUMENTATION_OVERVIEW.md aktualisieren:
+```typescript
+// Bei neuen Dokumenten in docs/:
+// ✅ Dokumentationsstruktur-Tree erweitern
+// ✅ Neue Datei in entsprechender Sektion beschreiben
+// ✅ Umfang (Zeilen) und Abdeckung dokumentieren
+// ✅ Wichtigkeit und Nutzung angeben
+
+// Bei Änderungen an bestehenden Docs:
+// ✅ Umfang (Zeilen) aktualisieren
+// ✅ Abdeckung um neue Inhalte erweitern
+// ✅ Status bei Fertigstellung anpassen
+```
+
+#### 2. INTERDEPENDENCY.md aktualisieren bei:
+```typescript
+// Backend-Änderungen:
+// ✅ Neue Module → Backend-Module-Dependencies erweitern
+// ✅ Neue Auth-Mechanismen → Authentifizierung-Sektion updaten
+// ✅ Neue API-Patterns → API-Integration-Standards erweitern
+// ✅ Neue orchestrator/types → Template-Referenzen aktualisieren
+
+// Frontend-Änderungen:
+// ✅ Neue Module → Frontend-Module-Dependencies erweitern
+// ✅ Neue Layout-Komponenten → Layout-System-Sektion updaten
+// ✅ Neue CSS-Klassen → CSS-Klassen-System erweitern
+// ✅ Neue Router-Patterns → Router-Integration-Standards updaten
+
+// Shared Dependencies:
+// ✅ Neue Auth-Logik → Kritische Abhängigkeiten erweitern
+// ✅ Neue API-Calls → API-Pattern-Dokumentation updaten
+// ✅ Breaking Changes → Breaking Change Prevention Liste erweitern
+// ✅ Neue Integration-Guidelines hinzufügen
+```
+
+### AUTOMATISCHE DOKUMENTATIONS-UPDATES:
+
+#### Bei neuen Backend-Modulen:
+```bash
+# PFLICHT-Updates:
+1. ✅ docs/modules/[module]/README.md erstellen
+2. ✅ docs/modules/[module]/API.md erstellen  
+3. ✅ docs/modules/[module]/CHANGELOG.md erstellen
+4. ✅ docs/DOCUMENTATION_OVERVIEW.md - Modul-Sektion hinzufügen
+5. ✅ docs/INTERDEPENDENCY.md - Backend-Dependencies erweitern
+6. ✅ docs/README.md - Module-Liste und Metriken aktualisieren
+7. ✅ docs/CHANGELOG.md - Version und Features hinzufügen
+```
+
+#### Bei neuen Frontend-Modulen:
+```bash
+# PFLICHT-Updates:
+1. ✅ docs/modules/[module]/README.md um Frontend-Sektion erweitern
+2. ✅ docs/DOCUMENTATION_OVERVIEW.md - Frontend-Inhalte hinzufügen
+3. ✅ docs/INTERDEPENDENCY.md - Frontend-Dependencies erweitern
+4. ✅ docs/README.md - Frontend-Features aktualisieren
+5. ✅ docs/CHANGELOG.md - UI/UX Änderungen dokumentieren
+```
+
+#### Bei API-Änderungen:
+```bash
+# SOFORT-Updates:
+1. ✅ docs/modules/[module]/API.md - Endpunkt-Dokumentation aktualisieren
+2. ✅ docs/INTERDEPENDENCY.md - API-Integration-Standards anpassen
+3. ✅ docs/modules/[module]/CHANGELOG.md - API-Changes dokumentieren
+4. ✅ docs/CHANGELOG.md - Breaking Changes dokumentieren (falls vorhanden)
+```
+
+#### Bei Architektur-Änderungen:
+```bash
+# KRITISCHE Updates:
+1. ✅ docs/INTERDEPENDENCY.md - Vollständige Dependency-Review
+2. ✅ docs/architecture/overview.md - System-Architektur aktualisieren
+3. ✅ docs/architecture/module-guidelines.md - Guidelines anpassen
+4. ✅ docs/DOCUMENTATION_OVERVIEW.md - Architektur-Sektion updaten
+5. ✅ .cursorrules - Standards bei Breaking Changes anpassen
+```
+
+### Dokumentations-Inhalte:
+1. **README.md:**
+   - Modul-Übersicht mit Zweck und Status
+   - Implementierte Funktionen
+   - Technische Implementation
+   - Sicherheit & Berechtigungen
+   - Performance-Metriken
+   - Bekannte Limitierungen
+   - Roadmap & Entwicklungsplan
+
+2. **API.md:**
+   - Alle API-Endpunkte dokumentiert
+   - Request/Response-Beispiele
+   - Error-Handling-Szenarien
+   - PowerShell-Test-Beispiele
+   - Authentifizierungs-Requirements
+
+3. **CHANGELOG.md:**
+   - Versionierte Änderungshistorie
+   - Was hinzugefügt/geändert/entfernt wurde
+   - Technische Details zu Updates
+   - Geplante Verbesserungen
+
+### Dokumentations-Updates:
+- Bei JEDEM neuen Feature: Dokumentation aktualisieren
+- Bei API-Änderungen: API.md sofort updaten
+- Bei Breaking Changes: CHANGELOG.md ausführlich dokumentieren
+- Haupt-README.md bei neuen Modulen erweitern
+
+## Testing
+- Test-Funktionen in orchestrator für jedes Modul
+- PowerShell-Test-Scripts erstellen
+- Mock-Daten für Entwicklung bereitstellen
+
+## NICHT ERLAUBT:
+❌ Module ohne orchestrator.ts
+❌ Module ohne types.ts  
+❌ Geschäftslogik direkt in orchestrator.ts
+❌ Fehlende Error-Handling
+❌ Untypisierte API-Responses
+❌ Module ohne Authentifizierung
+❌ Direkte Datenbankzugriffe ohne Abstraktionsschicht
+❌ Module, die nicht in index.ts registriert sind
+❌ Module ohne Dokumentation in docs/modules/
+❌ API-Änderungen ohne Dokumentations-Update
+❌ Neue Module ohne DOCUMENTATION_OVERVIEW.md Update
+❌ Abhängigkeits-Änderungen ohne INTERDEPENDENCY.md Update
+❌ Frontend-Module ohne Frontend-Dokumentation in bestehenden docs/modules/
+❌ Neue Features ohne docs/CHANGELOG.md Eintrag
+❌ Breaking Changes ohne ausführliche Dokumentation
+
+## Bei JEDEM neuen Modul:
+1. ✅ Ordnerstruktur nach Standard erstellen
+2. ✅ types.ts mit allen nötigen Interfaces
+3. ✅ functions/ mit separaten Funktionsdateien  
+4. ✅ orchestrator.ts mit Route-Handlern
+5. ✅ Integration in index.ts
+6. ✅ Vollständige Dokumentation erstellen:
+   - docs/modules/[module]/README.md
+   - docs/modules/[module]/API.md
+   - docs/modules/[module]/CHANGELOG.md
+7. ✅ **KRITISCH: Dokumentations-Wartung**
+   - docs/DOCUMENTATION_OVERVIEW.md erweitern
+   - docs/INTERDEPENDENCY.md um Dependencies erweitern
+   - docs/README.md Module-Liste aktualisieren
+   - docs/CHANGELOG.md Version hinzufügen
+8. ✅ Test-Script erweitern
+9. ✅ Haupt-Dokumentation aktualisieren
+
+## Frontend-Standards (React + TypeScript)
+
+### Frontend-Modulstruktur - Befolge IMMER:
+```
+frontend/src/
+├── layouts/                    # Layout-Komponenten (wiederverwendbar)
+│   ├── MainLayout.tsx         # Haupt-Layout mit Header + Sidebar
+│   ├── AuthLayout.tsx         # Login/Auth-Layout
+│   └── components/
+│       ├── Header.tsx         # Globaler Header
+│       └── Sidebar.tsx        # Navigation-Sidebar
+├── modules/                   # Modulbasierte Komponenten
+│   ├── [module]/
+│   │   ├── [Module]Module.tsx # Haupt-Modul mit Router
+│   │   ├── pages/            # Seiten-Komponenten
+│   │   │   ├── [Page]Page.tsx
+│   │   │   └── [Page]Page.tsx
+│   │   └── styles/
+│   │       └── [Module]Pages.css
+│   └── auth/
+│       └── LoginPage.tsx
+├── components/                # Globale UI-Komponenten
+│   ├── Dashboard.tsx
+│   └── [Component].tsx
+└── App.tsx                   # Router-Konfiguration
+```
+
+### Frontend-Datei-Standards:
+
+#### 1. Modul-Router-Pattern:
+```typescript
+// [Module]Module.tsx - IMMER diese Struktur
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import [Page]Page from './pages/[Page]Page';
+
+const [Module]Module: React.FC = () => {
+  return (
+    <div className="[module]-module">
+      <Routes>
+        <Route path="/" element={<Navigate to="/[module]/[default]" replace />} />
+        <Route path="/[page]" element={<[Page]Page />} />
+        <Route path="*" element={<Navigate to="/[module]/[default]" replace />} />
+      </Routes>
+    </div>
+  );
+};
+
+export default [Module]Module;
+```
+
+#### 2. Page-Komponenten-Pattern:
+```typescript
+// pages/[Page]Page.tsx - IMMER diese Struktur
+import React, { useState, useEffect } from 'react';
+import '../styles/[Module]Pages.css';
+
+interface [Entity] {
+  id: string;
+  // weitere Properties
+}
+
+const [Page]Page: React.FC = () => {
+  const [data, setData] = useState<[Entity][]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('http://localhost:5000/api/[module]/[endpoint]', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      if (result.success && result.data) {
+        setData(result.data.data || result.data);
+      } else {
+        setError(result.message || 'Fehler beim Laden');
+      }
+    } catch (err) {
+      setError('Verbindungsfehler zum Backend');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="[module]-page">
+      <div className="page-header">
+        <div className="page-title">
+          <h1>[Icon] [Title]</h1>
+          <p>[Description]</p>
+        </div>
+        <div className="page-actions">
+          <button className="btn btn-primary">
+            [Action]
+          </button>
+        </div>
+      </div>
+
+      <div className="content-section">
+        {/* Content hier */}
+      </div>
+    </div>
+  );
+};
+
+export default [Page]Page;
+```
+
+#### 3. CSS-Standards - Folge IMMER diesen Klassen:
+```css
+/* Basis-Layout-Klassen */
+.[module]-page          # Haupt-Container
+.page-header           # Header mit Titel und Actions
+.page-title            # Titel-Bereich
+.page-actions          # Button-Bereich
+.content-section       # Haupt-Inhalt
+.filters-section       # Filter-Bereich
+.page-summary          # Zusammenfassung unten
+
+/* Button-Klassen */
+.btn                   # Basis-Button
+.btn-primary           # Haupt-Action (blau)
+.btn-secondary         # Sekundär-Action (grau)
+.btn-success           # Erfolg-Action (grün)
+.btn-small             # Kleine Buttons
+.btn-outline           # Umrandete Buttons
+
+/* Status-Klassen */
+.loading-state         # Loading-Zustand
+.error-state           # Fehler-Zustand
+.empty-state           # Leerer Zustand
+
+/* Layout-Modi */
+.main-layout.fullwidth # Vollbild-Layout
+.main-layout.compact   # Kompaktes Layout
+```
+
+### API-Integration-Standards:
+
+#### 1. Authentifizierung - IMMER verwenden:
+```typescript
+const token = localStorage.getItem('authToken');
+const headers = {
+  'Authorization': `Bearer ${token}`,
+  'Content-Type': 'application/json'
+};
+```
+
+#### 2. Error-Handling - IMMER implementieren:
+```typescript
+try {
+  // API-Call
+} catch (err) {
+  setError('Verbindungsfehler zum Backend');
+  console.error('Fehler beim [Action]:', err);
+}
+```
+
+#### 3. Loading-States - IMMER verwenden:
+```typescript
+const [loading, setLoading] = useState(true);
+
+// In JSX:
+{loading && (
+  <div className="loading-state">
+    <div className="loading-spinner"></div>
+    <p>Lade [Data]...</p>
+  </div>
+)}
+```
+
+### Router-Integration-Standards:
+
+#### 1. App.tsx - Router-Struktur:
+```typescript
+// IMMER diese Router-Struktur befolgen
+<Router>
+  <Routes>
+    <Route path="/login" element={
+      <AuthLayout><LoginPage /></AuthLayout>
+    } />
+    <Route path="/[module]/*" element={
+      <MainLayout><[Module]Module /></MainLayout>
+    } />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes>
+</Router>
+```
+
+#### 2. Layout-Integration - Module nutzen Layouts automatisch:
+```typescript
+// Layout wird durch Router bereitgestellt, nicht direkt importiert
+// Module erhalten Layout-Context automatisch
+```
+
+### State-Management-Standards:
+
+#### 1. Lokaler State für Seiten-Daten:
+```typescript
+const [data, setData] = useState<Type[]>([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+const [filters, setFilters] = useState({ /* filter object */ });
+```
+
+#### 2. localStorage für User-Daten:
+```typescript
+// Authentifizierung
+localStorage.getItem('authToken')
+localStorage.getItem('userRole')
+localStorage.getItem('userName')
+```
+
+### Naming-Conventions Frontend:
+
+#### Komponenten:
+- PascalCase: `EmployeesPage.tsx`, `HeaderComponent.tsx`
+- Seiten enden mit `Page`: `EmployeesPage`, `DashboardPage`
+- Module enden mit `Module`: `HRModule`, `SupportModule`
+
+#### CSS-Klassen:
+- kebab-case: `.employee-card`, `.ticket-list`
+- Modul-Präfix: `.hr-page`, `.support-module`
+- Status-Präfix: `.status-active`, `.priority-high`
+
+#### Dateien:
+- Komponenten: PascalCase.tsx
+- Styles: PascalCase.css oder kebab-case.css
+- Module-Ordner: lowercase mit Bindestrich
+
+## Frontend-Integration-Checkliste:
+
+### Bei JEDEM neuen Frontend-Modul:
+1. ✅ Modul-Ordner in `src/modules/[module]/` erstellen
+2. ✅ `[Module]Module.tsx` mit Router-Setup
+3. ✅ `pages/` Ordner mit mindestens einer Seite
+4. ✅ `styles/[Module]Pages.css` für Modul-Styles
+5. ✅ Integration in `App.tsx` Router
+6. ✅ Navigation in `Sidebar.tsx` hinzufügen
+7. ✅ API-Integration mit Backend-Endpunkten
+8. ✅ Error-Handling und Loading-States
+9. ✅ Responsive Design testen
+10. ✅ **KRITISCH: Dokumentations-Wartung**
+    - docs/DOCUMENTATION_OVERVIEW.md um Frontend-Inhalte erweitern
+    - docs/INTERDEPENDENCY.md um Frontend-Dependencies erweitern
+    - docs/modules/[module]/README.md um Frontend-Sektion erweitern
+    - docs/README.md Frontend-Features aktualisieren
+
+## Frontend NICHT ERLAUBT:
+❌ Direkte Layout-Imports in Modulen
+❌ Inline-Styles statt CSS-Klassen
+❌ API-Calls ohne Error-Handling
+❌ Fehlende Loading-States
+❌ Untypisierte Komponenten-Props
+❌ Fehlende Responsive-Design
+❌ Module ohne Router-Integration
+❌ Authentifizierung umgehen
+❌ Frontend-Module ohne Dokumentations-Updates
+❌ Neue Pages ohne INTERDEPENDENCY.md Dependencies-Update
+❌ CSS-Änderungen ohne Shared-Component-Dokumentation
+
+Diese Regeln gewährleisten Konsistenz, Wartbarkeit und Skalierbarkeit der CompanyAI-Architektur.
