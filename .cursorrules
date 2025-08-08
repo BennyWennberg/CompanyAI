@@ -151,6 +151,20 @@ try {
 
 ## Dokumentation Standards
 
+### Markdown-Dokumentations-Policy (KRITISCH)
+- Alle Dokumentations-Dateien mit Endung `.md` MÜSSEN unter `docs/` liegen.
+- Erlaubte Ausnahmen:
+  - `README.md` im Repository-Root (Projekt-Overview)
+  - `frontend/README.md` und `backend/README.md` (nur falls unbedingt nötig; bevorzugt Inhalte in `docs/` konsolidieren)
+- Nicht erlaubt:
+  - Markdown-Dokumente außerhalb von `docs/` (z. B. Roadmaps, API-Beschreibungen, Architektur-Notizen) – diese müssen nach `docs/` verschoben werden.
+- Vorgeschriebene Pfadkonventionen in `docs/`:
+  - Globale Dokumente: `docs/README.md`, `docs/CHANGELOG.md`, `docs/DOCUMENTATION_OVERVIEW.md`, `docs/INTERDEPENDENCY.md`, `docs/IMPROVEMENTS_ROADMAP.md`
+  - Modul-Dokumente: `docs/modules/[module]/README.md`, `docs/modules/[module]/API.md`, `docs/modules/[module]/CHANGELOG.md`
+  - Architektur: `docs/architecture/overview.md`, `docs/architecture/module-guidelines.md`
+- PR/Review-Regel: PRs mit `.md`-Dateien außerhalb von `docs/` (außer den oben genannten Ausnahmen) werden abgelehnt – Dateien müssen in die korrekte `docs/`-Struktur verschoben werden.
+- Bei Verschiebungen von `.md` in `docs/` sind alle internen Links zu aktualisieren.
+
 ### Jedes neue Modul MUSS dokumentiert werden:
 ```
 docs/modules/[module-name]/
