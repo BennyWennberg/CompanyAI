@@ -1,0 +1,9 @@
+.ai-page {}
+.chat-box { border: 1px solid #e2e2e2; border-radius: 8px; padding: 12px; min-height: 220px; background: #fff; }
+.chat-msg { margin: 6px 0; }
+.chat-msg.user { color: #333; }
+.chat-msg.assistant { color: #0b5ed7; }
+.chat-input { display: flex; gap: 8px; margin-top: 10px; }
+.chat-input input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+.chat-input .btn { padding: 8px 12px; }
+

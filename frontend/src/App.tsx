@@ -6,13 +6,17 @@ import Dashboard from './components/Dashboard';
 import LoginPage from './modules/auth/LoginPage';
 import HRModule from './modules/hr/HRModule';
 import SupportModule from './modules/support/SupportModule';
+import AIModule from './modules/ai/AIModule';
 import RequireAuth from './components/RequireAuth';
+import ErrorBoundary from './components/ErrorBoundary';
+import ThemeSettings from './components/ThemeSettings';
 import './App.css';
 
 function App() {
   return (
     <Router>
       <div className="App">
+        <ErrorBoundary>
         <Routes>
           {/* Authentication Routes */}
           <Route path="/login" element={
@@ -45,10 +49,20 @@ function App() {
               </MainLayout>
             </RequireAuth>
           } />
+
+          <Route path="/ai/*" element={
+            <RequireAuth>
+              <MainLayout>
+                <AIModule />
+              </MainLayout>
+            </RequireAuth>
+          } />
           
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </ErrorBoundary>
+        <ThemeSettings />
       </div>
     </Router>
   );

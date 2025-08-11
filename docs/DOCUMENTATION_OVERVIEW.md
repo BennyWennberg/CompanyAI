@@ -5,7 +5,7 @@
 **Erstellt am:** 8. Dezember 2024  
 **Letzte Aktualisierung:** 8. Dezember 2024  
 **Version:** 2.1.0  
-**Status:** ✅ Vollständig implementiert + Sicherheits-Updates
+**Status:** ✅ Vollständig implementiert + Sicherheits- & DataSources-Updates
 
 Diese Übersicht zeigt die komplette Dokumentationsstruktur, die für CompanyAI erstellt wurde.
 
@@ -16,7 +16,7 @@ docs/
 ├── README.md                           # Haupt-Projektdokumentation
 ├── CHANGELOG.md                        # Projekt-Versionshistorie  
 ├── DOCUMENTATION_OVERVIEW.md           # Diese Übersicht
-├── INTERDEPENDENCY.md                  # 🔗 Abhängigkeiten-Map für KI-Integration
+├── INTERDEPENDENCY.md                  # 🔗 Abhängigkeiten- & DataSources-Map
 ├── modules/                           # Modul-spezifische Dokumentation
 │   ├── hr/                           # HR-Modul Dokumentation
 │   │   ├── README.md                 # HR-Modul Übersicht
@@ -147,12 +147,56 @@ docs/
 
 ## 🎯 Dokumentations-Features
 
-### ✅ Vollständige Abdeckung (v2.1.0)
+- ### ✅ Vollständige Abdeckung (v2.1.0)
 - **Alle Module dokumentiert:** HR, Support + Security-Updates
 - **Alle API-Endpunkte:** 11 Endpunkte vollständig beschrieben + Auth-Validierung
 - **Vollständige Beispiele:** Request/Response für jeden Endpunkt
 - **Error-Handling:** Standardisierte Error-Typen (ValidationError, NotFound, etc.)
 - **Code-Beispiele:** PowerShell, TypeScript, curl + Auth-Guard Patterns
+
+### 🛡️ Neue Richtlinien
+- `docs/AI_SECURITY_POLICY.md` – KI-Sicherheitsrichtlinie (PII, Logging, Zugriff)
+- `docs/LOGGING_STRATEGY.md` – Zentrale Logging-Strategie (reqId, Middleware)
+- `docs/IMPROVEMENTS_ROADMAP.md` – Iterative Verbesserungen & Meilensteine
+- `docs/RAG_DATA_SOURCES.md` – Datenquellen & Indexing-Strategie für RAG
+- `docs/PROMPT_GUIDELINES.md` – Prompt-Standards & Review-Prozess
+ - `docs/INTERDEPENDENCY.md` – DataSources/Integrations (Entra ID, Manual, Sync, Frontend-Bindings)
+
+### 🔑 Umgebungsvariablen (Beispiele)
+```
+# backend/.env
+NODE_ENV=development
+PORT=5000
+OPENWEBUI_URL=http://localhost:3000
+RAG_INDEX_PATH=./backend/rag_index.json
+RAG_EMBEDDING_MODEL=text-embedding-3-small
+# Entra ID / Microsoft Graph
+AZURE_TENANT_ID=...
+AZURE_CLIENT_ID=...
+AZURE_CLIENT_SECRET=...
+GRAPH_BASE_URL=https://graph.microsoft.com
+ENTRA_SYNC_ENABLED=true
+ENTRA_SYNC_INTERVAL_MS=3600000
+# Optional bei Cloud-LLMs:
+# OPENAI_API_KEY=sk-...
+# OPENWEBUI_API_KEY=...
+```
+
+```
+# frontend/.env (Theme/Branding)
+VITE_COMPANY_NAME=CompanyAI
+VITE_COMPANY_SLOGAN=Intelligent Business Solutions
+VITE_APP_VERSION=v2.1.0
+VITE_COMPANY_LOGO_URL=/logo.png
+VITE_HEADER_BG_PRIMARY=#667eea
+VITE_HEADER_BG_SECONDARY=#764ba2
+VITE_HEADER_USE_GRADIENT=true
+VITE_HEADER_TEXT_COLOR=#ffffff
+VITE_SIDEBAR_BG_COLOR=#2d3748
+VITE_SIDEBAR_TEXT_COLOR=#e2e8f0
+VITE_SIDEBAR_ACCENT_COLOR=#667eea
+VITE_SIDEBAR_WIDTH=280px
+```
 
 ### ✅ Entwickler-freundlich
 - **Copy-Paste-Ready:** Alle Code-Beispiele sofort verwendbar

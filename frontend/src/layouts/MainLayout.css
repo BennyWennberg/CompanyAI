@@ -5,7 +5,7 @@
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background-color: #f8fafc;
+  background-color: var(--bg-color);
 }
 
 .layout-content {
@@ -20,8 +20,8 @@
   overflow-y: auto;
   background-color: #ffffff;
   margin: 16px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, var(--shadow-intensity));
 }
 
 /* Layout-Modi */

@@ -1,10 +1,13 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
 import './Header.css';
 
 const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const { theme } = useTheme();
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -19,7 +22,7 @@ const Header: React.FC = () => {
       if (path.includes('/create')) return 'Support - Neues Ticket';
       return 'Support - Kundensupport';
     }
-    return 'CompanyAI Dashboard';
+    return `${theme.companyName} Dashboard`;
   };
 
   const getCurrentModule = () => {
@@ -60,8 +63,13 @@ const Header: React.FC = () => {
     <header className="main-header">
       <div className="header-left">
         <div className="logo" onClick={() => navigate('/')}>
-          <h1>CompanyAI</h1>
-          <span className="version">v2.0</span>
+          {theme.companyLogoUrl && theme.companyLogoUrl !== '/logo.png' ? (
+            <img src={theme.companyLogoUrl} alt={theme.companyName} style={{ height: '32px', marginRight: '8px' }} />
+          ) : null}
+          <div>
+            <h1>{theme.companyName}</h1>
+            <span className="version">{theme.appVersion}</span>
+          </div>
         </div>
         <div className="page-title">
           <h2>{getPageTitle()}</h2>
@@ -69,6 +77,11 @@ const Header: React.FC = () => {
             <span className={`module-badge ${getCurrentModule()}`}>
               {getCurrentModule().toUpperCase()}
             </span>
+            {theme.companySlogan && (
+              <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)', marginLeft: '8px' }}>
+                {theme.companySlogan}
+              </span>
+            )}
           </div>
         </div>
       </div>

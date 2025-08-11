@@ -46,6 +46,13 @@ const Dashboard: React.FC = () => {
         lastUpdate: '8. Dezember 2024'
       },
       {
+        name: 'AI Module',
+        status: 'active',
+        description: 'AI Chat & RAG-gestützte Assistenten (OpenWebUI)',
+        endpoints: 3,
+        lastUpdate: '8. Dezember 2024'
+      },
+      {
         name: 'Produktion Module',
         status: 'planned',
         description: 'Fertigungsprozesse und Qualitätskontrolle - Geplant',
@@ -117,6 +124,7 @@ const Dashboard: React.FC = () => {
                 <div className="module-icon">
                   {module.name.includes('HR') && '👥'}
                   {module.name.includes('Support') && '🎫'}
+                  {module.name.includes('AI') && '🤖'}
                   {module.name.includes('Produktion') && '🏭'}
                 </div>
                 <div className="module-status-badge">

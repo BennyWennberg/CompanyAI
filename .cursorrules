@@ -1,4 +1,7 @@
 # CompanyAI - Modulbasierte Architektur Regeln
+# Diese Regeln gelten ALLGEMEIN für ALLE Module (Backend und Frontend).
+# Spezifische Beispiele dürfen niemals als Ausnahmen interpretiert werden –
+# jede neue Modul-Implementation muss diese Standards vollständig erfüllen.
 
 ## Modulstruktur Standards
 
@@ -165,13 +168,36 @@ try {
 - PR/Review-Regel: PRs mit `.md`-Dateien außerhalb von `docs/` (außer den oben genannten Ausnahmen) werden abgelehnt – Dateien müssen in die korrekte `docs/`-Struktur verschoben werden.
 - Bei Verschiebungen von `.md` in `docs/` sind alle internen Links zu aktualisieren.
 
-### Jedes neue Modul MUSS dokumentiert werden:
+### PR/Review-Gates für DataSources/Integrations (KRITISCH)
+- Jeder PR, der DataSources/Integrations ändert (z. B. neue Quelle, externe API, .env-Variablen, Sync-Mechanismen), MUSS folgende Dokumente aktualisieren – andernfalls wird der PR abgelehnt:
+  - `docs/INTERDEPENDENCY.md` (DataSources-Dependencies, Environment-Dependencies, External-API-Dependencies, Sync-Dependencies, Cross-DataSource-Logic, Frontend-API-Bindings, Source-Typen manual/external)
+  - `docs/DOCUMENTATION_OVERVIEW.md` (Integration-Architektur und Dokumentationsstruktur)
+  - `docs/CHANGELOG.md` (versionierte Änderung an Integrationen)
+  - Falls von einem Modul konsumiert: `docs/modules/[module]/README.md` (Nutzung/Abhängigkeiten) und `docs/modules/[module]/API.md` (genutzte Endpunkte, z. B. `/api/data/*`)
+  - Falls AI/RAG betroffen: `docs/RAG_DATA_SOURCES.md` (Quelle, Umfang, PII-Richtlinien)
+  - Falls Security/PII betroffen: `docs/AI_SECURITY_POLICY.md` (Scopes, Token-Flows, PII in Logs unterbinden)
+  - Falls Logging-Flüsse betroffen: `docs/LOGGING_STRATEGY.md` (Events, reqId, Retention)
+
+### PR/Review-Gates für Frontend Theme & Layout-Konfiguration (KRITISCH)
+- Jede Änderung an Frontend-Theme-Parametern (z. B. Farben, Branding, Layout-Variablen) MUSS folgende Updates enthalten:
+  - `frontend/.env` (oder entsprechende ENV-Datei) aktualisieren: Neue/angepasste `VITE_*` Variablen für Theme/Branding
+  - `docs/INTERDEPENDENCY.md`: Abschnitt "Frontend-Theme/Branding" erweitern/aktualisieren (Environment-Dependencies, betroffene Komponenten wie `Header`, `Sidebar`, CSS-Variables)
+  - `docs/DOCUMENTATION_OVERVIEW.md`: Dokumentationsstatus und ENV-Beispiel erweitern (Theme-Variablen auflisten)
+  - `docs/CHANGELOG.md`: Versionierte UI/UX-Änderungen dokumentieren
+  - Konsistenz prüfen: CSS-Custom-Properties (`--*`) in globalen Styles referenzieren; keine Hardcodes in Komponenten
+
+### Jedes neue Modul MUSS dokumentiert werden (Pflicht)
 ```
 docs/modules/[module-name]/
 ├── README.md           # Vollständige Modul-Dokumentation
 ├── API.md             # Detaillierte API-Dokumentation
 └── CHANGELOG.md       # Versionierung und Änderungen
 ```
+
+- Für JEDE Änderung an Endpunkten, Routen oder Strukturen des Moduls: `docs/modules/[module]/API.md` sofort aktualisieren (inkl. Request/Response-Beispiele, Statuscodes, Auth-Requirements)
+- Für JEDE neue Funktion/Feature im Modul: `docs/modules/[module]/README.md` um Funktionsbeschreibung, Sicherheit, Abhängigkeiten und Limitierungen erweitern
+- Für JEDE produktive Änderung: `docs/modules/[module]/CHANGELOG.md` um Version/Datum/Änderung ergänzen
+- Globale Übersichten IMMER aktualisieren: `docs/DOCUMENTATION_OVERVIEW.md`, `docs/INTERDEPENDENCY.md`, `docs/CHANGELOG.md` (siehe Wartungspflichten)
 
 ## Dokumentations-Wartung (KRITISCH)
 
@@ -205,6 +231,15 @@ docs/modules/[module-name]/
 // ✅ Neue CSS-Klassen → CSS-Klassen-System erweitern
 // ✅ Neue Router-Patterns → Router-Integration-Standards updaten
 
+// DataSources/Integrations-Änderungen (KRITISCH):
+// ✅ Neue DataSources → DataSources-Dependencies-Sektion erweitern
+// ✅ .env Variablen → Environment-Dependencies dokumentieren
+// ✅ Externe APIs (z. B. Microsoft Graph) → External-API-Dependencies hinzufügen
+// ✅ Sync-Mechanismen → Sync-Dependencies dokumentieren (Trigger, Intervalle, Startbedingungen)
+// ✅ Cross-DataSource Dependencies → Combined-Logic dokumentieren
+// ✅ Frontend-DataSource-Bindings → Frontend-API-Dependencies updaten
+// ✅ Source-Typen (manual/external) → Source-Type-Dependencies dokumentieren
+
 // Shared Dependencies:
 // ✅ Neue Auth-Logik → Kritische Abhängigkeiten erweitern
 // ✅ Neue API-Calls → API-Pattern-Dokumentation updaten
@@ -234,6 +269,18 @@ docs/modules/[module-name]/
 3. ✅ docs/INTERDEPENDENCY.md - Frontend-Dependencies erweitern
 4. ✅ docs/README.md - Frontend-Features aktualisieren
 5. ✅ docs/CHANGELOG.md - UI/UX Änderungen dokumentieren
+```
+
+#### Bei neuen DataSources/Integrations (KRITISCH):
+```bash
+# SOFORT-Updates:
+1. ✅ docs/INTERDEPENDENCY.md - DataSources-Dependencies-Sektion erweitern
+2. ✅ docs/INTERDEPENDENCY.md - Environment-Variables (.env) dokumentieren
+3. ✅ docs/INTERDEPENDENCY.md - External-API-Dependencies hinzufügen
+4. ✅ docs/INTERDEPENDENCY.md - Frontend-API-Bindings dokumentieren
+5. ✅ docs/DOCUMENTATION_OVERVIEW.md - Integration-Architektur erweitern
+6. ✅ docs/CHANGELOG.md - Integration-Changes dokumentieren
+7. ✅ docs/README.md - Neue Capabilities hinzufügen
 ```
 
 #### Bei API-Änderungen:
@@ -305,6 +352,9 @@ docs/modules/[module-name]/
 ❌ Frontend-Module ohne Frontend-Dokumentation in bestehenden docs/modules/
 ❌ Neue Features ohne docs/CHANGELOG.md Eintrag
 ❌ Breaking Changes ohne ausführliche Dokumentation
+❌ DataSources/Integrations ohne INTERDEPENDENCY.md Dependencies-Update
+❌ .env Änderungen ohne Environment-Dependencies-Dokumentation
+❌ Externe API-Integrationen ohne External-API-Dependencies-Dokumentation
 
 ## Bei JEDEM neuen Modul:
 1. ✅ Ordnerstruktur nach Standard erstellen
@@ -323,6 +373,66 @@ docs/modules/[module-name]/
    - docs/CHANGELOG.md Version hinzufügen
 8. ✅ Test-Script erweitern
 9. ✅ Haupt-Dokumentation aktualisieren
+
+## Bei JEDER neuen DataSource/Integration:
+1. ✅ Ordnerstruktur in `backend/src/datasources/[source]/` erstellen
+2. ✅ Types, Store, Client/Sync-Logik implementieren
+3. ✅ API-Routes in `backend/src/app.ts` registrieren
+4. ✅ .env Variablen hinzufügen und dokumentieren
+5. ✅ **KRITISCH: INTERDEPENDENCY.md aktualisieren**
+   - DataSources-Dependencies-Sektion erweitern
+   - Environment-Variables (.env) dokumentieren
+   - External-API-Dependencies hinzufügen
+   - Frontend-API-Bindings dokumentieren
+   - Cross-DataSource Dependencies dokumentieren
+6. ✅ `docs/DOCUMENTATION_OVERVIEW.md` erweitern
+7. ✅ `docs/CHANGELOG.md` aktualisieren
+8. ✅ Frontend-Integration planen und dokumentieren
+
+## Neue Module – Verbindliche Backend-/Frontend-Integration (KRITISCH)
+
+### Backend (Pflicht)
+- Ordner: `backend/src/modules/[module]/` mit Struktur gemäß Modulstandards (siehe oben)
+- Routen-Registrierung: `register[Module]Routes(apiRouter)` in `backend/src/app.ts` hinzufügen
+- Auth: `requireAuth`/`requirePermission` konsequent verwenden
+- Health/Hello: Endpunkt-Liste in `/api/hello` um Modul ergänzen (Beschreibung + Endpunkte)
+- Tests: Mindestens Health-/Routing-Test für neues Modul
+
+### Frontend (Pflicht)
+- Ordner: `frontend/src/modules/[module]/` mit:
+  - `[Module]Module.tsx` (interner Router gemäß Standard)
+  - `pages/` (mind. eine Page-Komponente)
+  - `styles/[Module]Pages.css`
+- Router: In `frontend/src/App.tsx` Route für das Modul registrieren:
+  - `<Route path="/[module]/*" element={<MainLayout><[Module]Module /></MainLayout>} />` (mit `RequireAuth` Wrapper)
+- Navigation (Pflicht): In `frontend/src/layouts/components/Sidebar.tsx` Navigations-Eintrag hinzufügen (inkl. Submenu, falls zutreffend)
+- UI-Standards: Vorhandene CSS-Klassen verwenden (page-header, content-section, etc.)
+
+### Page-Struktur je Modul (Pflicht)
+- Für JEDES fachliche Feature im Modul MUSS eine eigene Page-Komponente angelegt werden:
+  - `frontend/src/modules/[module]/pages/[Feature]Page.tsx`
+  - Beispiele: `EmployeesPage.tsx`, `OnboardingPage.tsx`, `ReportsPage.tsx`, `StatsPage.tsx`
+- Der Modul-Router MUSS alle Feature-Pages per Route erreichbar machen:
+  - `/[module]/[feature]` → rendert die korrekte `[Feature]Page`
+- Die Sidebar MUSS ein Submenu mit Einträgen für alle Feature-Pages enthalten
+- Jede neue Page MUSS Loading-, Error- und Empty-States gemäß Standard implementieren und die Auth-Header bei API-Calls verwenden
+
+### Dashboard-Integration (Pflicht)
+- `frontend/src/components/Dashboard.tsx` um eine Modul-Kachel/-Sektion erweitern:
+  - Titel: Modulname (Icon optional)
+  - Kurzbeschreibung (1–2 Sätze)
+  - Link/Action: Button zur Modul-Startseite (`/[module]`)
+  - Optional: einfache Kennzahlen (falls verfügbar)
+- Kachel-Layout, Klassen und Stil gemäß bestehenden Dashboard-Karten verwenden.
+
+### Dokumentation & Scripte (Pflicht)
+- `docs/modules/[module]/` erstellen (README.md, API.md, CHANGELOG.md)
+- `docs/DOCUMENTATION_OVERVIEW.md` und `docs/INTERDEPENDENCY.md` um neues Modul und Abhängigkeiten ergänzen
+- PowerShell-Skripte anpassen (Tests/Checks), falls relevant
+
+Hinweis: Module ohne vollständige Backend-Registrierung, Frontend-Router-Integration und Sidebar-Navigation werden nicht angenommen. Für jedes neue Modul müssen die Routen in `App.tsx` registriert und passende Navigationseinträge in `Sidebar.tsx` ergänzt werden.
+
+Zusätzlich ist die Dashboard-Integration Pflicht: Für jedes neue Modul muss eine Kachel im Dashboard vorhanden sein, die zur Route `/[module]` führt und das Modul kurz beschreibt.
 
 ## Frontend-Standards (React + TypeScript)
 
@@ -597,5 +707,81 @@ localStorage.getItem('userName')
 ❌ Frontend-Module ohne Dokumentations-Updates
 ❌ Neue Pages ohne INTERDEPENDENCY.md Dependencies-Update
 ❌ CSS-Änderungen ohne Shared-Component-Dokumentation
+
+## Modul-Entfernung und Löschung (KRITISCH)
+
+Wenn ein Modul entfernt oder gelöscht werden soll, MÜSSEN ALLE Abhängigkeiten systematisch entfernt werden:
+
+### Backend-Entfernung (Pflicht):
+```bash
+1. ✅ backend/src/modules/[module]/ - Kompletten Ordner löschen
+2. ✅ backend/src/app.ts - Import und register[Module]Routes() entfernen
+3. ✅ backend/src/app.ts - Modul aus /api/health und /api/hello Endpunkten entfernen
+4. ✅ Alle Tests die das Modul referenzieren löschen/anpassen
+5. ✅ Package.json Dependencies prüfen (falls modul-spezifische Packages)
+```
+
+### Frontend-Entfernung (Pflicht):
+```bash
+1. ✅ frontend/src/modules/[module]/ - Kompletten Ordner löschen
+2. ✅ frontend/src/App.tsx - Route "/[module]/*" komplett entfernen
+3. ✅ frontend/src/layouts/components/Sidebar.tsx - Navigation-Eintrag entfernen
+4. ✅ frontend/src/components/Dashboard.tsx - Modul-Kachel entfernen
+5. ✅ Alle Imports/Referenzen auf das Modul in anderen Komponenten entfernen
+6. ✅ CSS-Klassen prüfen die modul-spezifisch waren (falls global verwendet)
+```
+
+### Dokumentations-Entfernung (KRITISCH):
+```bash
+1. ✅ docs/modules/[module]/ - Kompletten Ordner löschen
+2. ✅ docs/DOCUMENTATION_OVERVIEW.md - Modul-Referenzen entfernen
+3. ✅ docs/INTERDEPENDENCY.md - Alle Dependencies zum Modul entfernen
+4. ✅ docs/README.md - Modul aus Listen und Metriken entfernen
+5. ✅ docs/CHANGELOG.md - Eintrag über Modul-Entfernung hinzufügen:
+   ```markdown
+   ## [Version] - [Datum]
+   ### Entfernt
+   - **[Module] Modul komplett entfernt**
+     - Backend: Ordner, Routen, Tests
+     - Frontend: Komponenten, Router, Navigation, Dashboard-Kachel
+     - Dokumentation: Modul-Docs, Dependencies, Referenzen
+     - Grund: [Begründung für Entfernung]
+   ```
+```
+
+### Vollständigkeits-Check nach Modul-Entfernung:
+```bash
+✅ Keine Backend-Imports/Routes mehr vorhanden?
+✅ Keine Frontend-Components/Routes mehr vorhanden?
+✅ Alle Navigation-Links entfernt?
+✅ Dashboard ohne Modul-Kachel?
+✅ Dokumentation komplett bereinigt?
+✅ CHANGELOG.md dokumentiert Entfernung?
+✅ Keine broken Links in verbleibender Dokumentation?
+✅ Tests laufen noch durch?
+✅ Frontend startet ohne Fehler?
+✅ Backend startet ohne Fehler?
+```
+
+### Entfernungs-Reihenfolge (Empfohlen):
+```bash
+1. 🔴 CHANGELOG.md - Entfernung dokumentieren (mit Begründung)
+2. 🔄 Frontend - Routen, Navigation, Dashboard bereinigen
+3. 🔄 Backend - Ordner, Imports, Routen entfernen
+4. 📚 Dokumentation - Referenzen und Dependencies bereinigen
+5. ✅ Tests - Vollständigkeits-Check durchführen
+```
+
+### NICHT ERLAUBT bei Modul-Entfernung:
+❌ Modul-Ordner löschen ohne Route-Bereinigung
+❌ Backend/Frontend teilweise entfernt lassen
+❌ Navigation-Links zu gelöschtem Modul
+❌ Broken Dashboard-Kacheln
+❌ Verwaiste Dokumentations-Referenzen
+❌ Fehlende CHANGELOG.md Dokumentation der Entfernung
+❌ Dependencies in INTERDEPENDENCY.md nicht bereinigt
+❌ Tests die auf gelöschte Module verweisen
+
+**Wichtig**: Eine Modul-Entfernung ist ein Breaking Change und MUSS ausführlich in docs/CHANGELOG.md dokumentiert werden, inklusive Begründung und Auswirkungen auf andere Module.
 
 Diese Regeln gewährleisten Konsistenz, Wartbarkeit und Skalierbarkeit der CompanyAI-Architektur.

@@ -1,12 +1,12 @@
 /* Sidebar - CompanyAI Module Navigation */
 
 .main-sidebar {
-  width: 280px;
-  background: #2d3748;
-  color: white;
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg-color);
+  color: var(--sidebar-text-color);
   overflow-y: auto;
   border-right: 1px solid #4a5568;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, var(--shadow-intensity));
 }
 
 .sidebar-nav {
@@ -49,10 +49,10 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   text-decoration: none;
-  color: #e2e8f0;
-  transition: all 0.2s;
+  color: var(--sidebar-text-color);
+  transition: all var(--animation-duration);
   font-weight: 500;
   position: relative;
 }
@@ -63,7 +63,7 @@
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--sidebar-accent-color);
   color: white;
   font-weight: 600;
 }
@@ -98,10 +98,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: calc(var(--border-radius) - 2px);
   text-decoration: none;
   color: #cbd5e0;
-  transition: all 0.2s;
+  transition: all var(--animation-duration);
   font-size: 0.85rem;
   font-weight: 400;
 }
@@ -139,7 +139,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: calc(var(--border-radius) - 2px);
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -150,15 +150,11 @@
   display: inline-block;
 }
 
-.status-indicator.hr {
-  background: #48bb78;
-  box-shadow: 0 0 6px rgba(72, 187, 120, 0.5);
-}
+.status-indicator.hr { background: var(--hr-color); box-shadow: 0 0 6px var(--hr-color); opacity: 0.8; }
 
-.status-indicator.support {
-  background: #ed8936;
-  box-shadow: 0 0 6px rgba(237, 137, 54, 0.5);
-}
+.status-indicator.support { background: var(--support-color); box-shadow: 0 0 6px var(--support-color); opacity: 0.8; }
+
+.status-indicator.ai { background: var(--ai-color); box-shadow: 0 0 6px var(--ai-color); opacity: 0.8; }
 
 .status-indicator.inactive {
   background: #718096;
