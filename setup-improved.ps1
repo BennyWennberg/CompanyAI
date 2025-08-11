@@ -27,6 +27,6 @@ Write-Host "`n🎯 Nächste Schritte:" -ForegroundColor Yellow
 Write-Host "1. npm run dev                    # Beide Services starten" -ForegroundColor Cyan
 Write-Host "2. http://localhost:5173          # Frontend öffnen" -ForegroundColor Cyan  
 Write-Host "3. Login mit Admin/HR-Rolle testen" -ForegroundColor Cyan
-Write-Host "4. IMPROVEMENTS_ROADMAP.md lesen  # Weitere Verbesserungen" -ForegroundColor Cyan
+Write-Host "4. docs/IMPROVEMENTS_ROADMAP.md lesen  # Weitere Verbesserungen" -ForegroundColor Cyan
 
 Write-Host "`n✨ Setup abgeschlossen! Viel Erfolg mit dem verbesserten Grundkonstrukt!" -ForegroundColor Green

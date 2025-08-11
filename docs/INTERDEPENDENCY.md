@@ -29,6 +29,20 @@ backend/src/
 │       └── functions/       # Geschäftslogik-Funktionen
 ```
 
+### Neue Infrastruktur-Abhängigkeiten (v2.1.0)
+```
+backend/src/index.ts
+  ├─ helmet                 # Security Headers
+  ├─ morgan                 # HTTP Request Logging (mit reqId)
+  ├─ express-rate-limit     # Basic Rate Limiting
+  └─ cors                   # CORS-Whitelist (http://localhost:5173)
+
+frontend/src/App.tsx
+  └─ components/ErrorBoundary.tsx  # UI-Fehlerfang, schützt Router/Module
+
+frontend/src/lib/apiClient.ts      # Zentraler Axios-Client mit Token-Interceptor
+```
+
 ### Frontend-Architektur (modulbasiert)
 ```
 frontend/src/
@@ -52,11 +66,81 @@ frontend/src/
 │       └── LoginPage.tsx    # SHARED: Authentifizierung
 └── components/
     └── Dashboard.tsx        # SHARED: System-Übersicht
+
+### AI-Integrationsschicht (v2.1.0)
+```
+backend/src/modules/ai/orchestrator.ts   # AI-Routen (chat, hr-assist)
+backend/src/openapi.ts                   # OpenAPI/Swagger Spezifikation
+docs/RAG_DATA_SOURCES.md                 # Datenquellen für RAG
+docs/PROMPT_GUIDELINES.md                # Prompt-Standards
+```
 ```
 
 ---
 
 ## 🔗 Kritische Abhängigkeiten
+
+### 0. DataSources/Integrations (KRITISCH)
+
+Diese Sektion dokumentiert alle Abhängigkeiten rund um Datenquellen (z. B. Entra ID via Microsoft Graph) und manuelle Datenquellen. Jede Änderung an Datenquellen erfordert Updates an dieser Datei, gemäß .cursorrules PR-Gates.
+
+#### DataSources-Übersicht
+- backend/src/datasources/
+  - entraac/ (Microsoft Entra ID Connector + Combined-Logic)
+  - manual/ (manuelle Benutzer/Geräte)
+  - index.ts (zentrale Re-Exports für App)
+
+#### Environment-Dependencies (.env)
+```
+# Entra ID / Microsoft Graph
+AZURE_TENANT_ID=...
+AZURE_CLIENT_ID=...
+AZURE_CLIENT_SECRET=...
+GRAPH_BASE_URL=https://graph.microsoft.com
+
+# Sync-Steuerung
+ENTRA_SYNC_ENABLED=true
+ENTRA_SYNC_INTERVAL_MS=3600000
+
+# Referenz (Dokuzwecke)
+ENTRA_ADMIN_CENTER_URL=https://entra.microsoft.com
+```
+
+#### External-API-Dependencies
+- Microsoft Graph API
+  - /v1.0/users (select: id, displayName, userPrincipalName, mail, department, jobTitle, accountEnabled)
+  - /v1.0/devices (select: id, displayName, deviceId, operatingSystem, operatingSystemVersion, trustType, accountEnabled)
+  - Auth: Client Credentials (MSAL) → scope: https://graph.microsoft.com/.default
+
+#### Sync-Dependencies
+- Initial- und periodischer Sync beim Backend-Start, gesteuert über ENTRA_SYNC_ENABLED und ENTRA_SYNC_INTERVAL_MS
+- Parallel-Sync von Users und Devices
+- Fehlerlog via Server-Log (reqId vorhanden), kein PII in Logs
+
+#### Cross-DataSource Dependencies (Combined-Logic)
+- Vereinheitlichter Zugriff über entraac/combined.ts:
+  - getCombinedUsers(source: all|entra|manual)
+  - getCombinedDevices(source: all|entra|manual)
+- Konfliktprüfung (E-Mail/UPN/deviceId) über kombinierte Quelle
+
+#### Frontend-API-Bindings
+- Endpunkte unter /api/data/* (geschützt via requireAuth):
+  - GET /api/data/users?source=all|entra|manual
+  - GET /api/data/devices?source=all|entra|manual
+  - POST /api/data/users (nur manual)
+  - POST /api/data/devices (nur manual)
+  - PUT /api/data/users/:id (nur manual)
+  - PUT /api/data/devices/:id (nur manual)
+  - DELETE /api/data/users/:id (nur manual)
+  - DELETE /api/data/devices/:id (nur manual)
+  - GET /api/data/stats
+  - GET /api/data/sources
+  - POST /api/data/sync
+  - GET /api/data/sync/status
+
+#### Source-Typen (manual/external)
+- manual: CRUD erlaubt, In-Memory-Store, UUID-IDs, CreatedBy/UpdatedBy
+- external (entra): read-only, Quelle ist Microsoft Graph Sync
 
 ### 1. AUTHENTIFIZIERUNG (SHARED DEPENDENCY)
 
@@ -88,6 +172,18 @@ localStorage.getItem('userName')      // Für UI-Anzeige
 ```
 
 ### 2. LAYOUT-SYSTEM (SHARED DEPENDENCY)
+### 2.5 LOGGING & SECURITY (SHARED DEPENDENCY)
+```
+Backend:
+  - Request-ID Middleware → req.reqId
+  - helmet, rateLimit, CORS(Whitelist), morgan
+Frontend:
+  - ErrorBoundary → fängt Rendering-Fehler ab
+  - apiClient → einheitliche Header/Fehlerbehandlung
+Dokumente:
+  - docs/LOGGING_STRATEGY.md
+  - docs/AI_SECURITY_POLICY.md
+```
 
 #### MainLayout + Header + Sidebar
 ```typescript
@@ -321,6 +417,33 @@ export interface PaginatedResponse<T> {
 ---
 
 ## 🎨 Frontend-Module-Dependencies
+
+### Frontend Theme/Branding (KRITISCH)
+
+#### Environment-Dependencies (frontend/.env)
+```
+VITE_COMPANY_NAME=CompanyAI
+VITE_APP_VERSION=v2.1.0
+VITE_COMPANY_LOGO_URL=/logo.png
+VITE_HEADER_BG_PRIMARY=#667eea
+VITE_HEADER_BG_SECONDARY=#764ba2
+VITE_HEADER_USE_GRADIENT=true
+VITE_HEADER_TEXT_COLOR=#ffffff
+VITE_SIDEBAR_BG_COLOR=#2d3748
+VITE_SIDEBAR_TEXT_COLOR=#e2e8f0
+VITE_SIDEBAR_ACCENT_COLOR=#667eea
+VITE_SIDEBAR_WIDTH=280px
+```
+
+#### Shared Dependencies
+- CSS Custom Properties (global in `frontend/src/index.css`) steuern Header/Sidebar/Buttons
+- `ThemeProvider` (`frontend/src/context/ThemeContext.tsx`) liest `VITE_*` Variablen und setzt CSS-Variablen
+- `Header.tsx` und `Sidebar.css` nutzen CSS-Variablen statt Hardcodes
+
+#### Änderungen/Erweiterungen: Pflicht-Updates
+- `.env` anpassen → `ThemeProvider` konsumiert Werte automatisch
+- `docs/DOCUMENTATION_OVERVIEW.md` ENV-Beispiele ergänzen/ändern
+- `docs/CHANGELOG.md` UI/UX-Änderungen dokumentieren
 
 ### Sidebar.tsx (NAVIGATION-ZENTRALE)
 ```typescript

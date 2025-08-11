@@ -25,6 +25,23 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - **Port-Standardisierung**: Vite auf Standard-Port 5173
 - **Router-Cleanup**: Veraltete @types/react-router-dom entfernt
 
+### 🧩 DataSources & Integrations
+- EntraAC DataSource (Microsoft Entra ID) implementiert: Client Credentials (MSAL), Sync (Users/Devices), Combined-Logic
+- Manual DataSource implementiert: CRUD für Benutzer/Geräte (separat von Entra)
+- Zentrale DataSources API unter `/api/data/*` (users, devices, sources, stats, sync, sync/status)
+- `.env` erweitert: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `GRAPH_BASE_URL`, `ENTRA_SYNC_ENABLED`, `ENTRA_SYNC_INTERVAL_MS`
+- Dokumentation aktualisiert: `INTERDEPENDENCY.md` (DataSources-Dependencies), `DOCUMENTATION_OVERVIEW.md` (Integration-Architektur)
+
+### 📏 Regeln/Prozess
+- `.cursorrules`: PR/Review-Gates für DataSources/Integrations (KRITISCH) ergänzt
+ - `.cursorrules`: PR/Review-Gates für Frontend Theme & Layout-Konfiguration ergänzt (ENV/Docs Pflicht-Updates)
+
+### 🎨 Frontend Theme/Branding
+- Neues Theme-System: `ThemeProvider` (React Context), CSS Custom Properties
+- Frontend `.env` Variablen (`VITE_*`) für Branding/Colors/Layout
+- `Header.tsx`, `Header.css`, `Sidebar.css`, `index.css` um Variablen erweitert
+- Optionale `ThemeSettings` UI zur Laufzeit-Anpassung
+
 ### 🛡️ Sicherheit
 - Alle Support-Endpunkte nun mit Berechtigungsprüfung
 - Auth-Guard verhindert unbefugten Zugriff auf geschützte Bereiche

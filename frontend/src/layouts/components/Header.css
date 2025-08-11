@@ -5,9 +5,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--header-background);
+  color: var(--header-text-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, var(--shadow-intensity));
   position: relative;
   z-index: 1000;
 }
@@ -32,9 +32,9 @@
 
 .logo h1 {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-bold);
   margin: 0;
-  color: white;
+  color: var(--header-text-color);
 }
 
 .version {
@@ -63,22 +63,18 @@
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-bold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.module-badge.hr {
-  background: rgba(76, 175, 80, 0.8);
-}
+.module-badge.hr { background: var(--hr-color); opacity: 0.8; }
 
-.module-badge.support {
-  background: rgba(255, 152, 0, 0.8);
-}
+.module-badge.support { background: var(--support-color); opacity: 0.8; }
 
-.module-badge.dashboard {
-  background: rgba(33, 150, 243, 0.8);
-}
+.module-badge.dashboard { background: var(--dashboard-color); opacity: 0.8; }
+
+.module-badge.ai { background: var(--ai-color); opacity: 0.8; }
 
 .header-right {
   display: flex;
@@ -105,8 +101,8 @@
 
 .user-name {
   font-size: 0.85rem;
-  font-weight: 600;
-  color: white;
+  font-weight: var(--font-weight-bold);
+  color: var(--header-text-color);
 }
 
 .user-role {
@@ -123,8 +119,8 @@
   align-items: center;
   justify-content: center;
   font-size: 0.8rem;
-  font-weight: 600;
-  color: white;
+  font-weight: var(--font-weight-bold);
+  color: var(--header-text-color);
   border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -132,12 +128,12 @@
   padding: 8px 16px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  color: white;
+  color: var(--header-text-color);
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all var(--animation-duration);
 }
 
 .logout-btn:hover {

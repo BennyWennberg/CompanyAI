@@ -36,6 +36,15 @@ const Sidebar: React.FC = () => {
       ]
     },
     {
+      title: 'AI',
+      path: '/ai',
+      icon: '🤖',
+      active: location.pathname.startsWith('/ai'),
+      submenu: [
+        { title: 'Chat', path: '/ai/chat', icon: '💬' }
+      ]
+    },
+    {
       title: 'Einstellungen',
       path: '/settings',
       icon: '⚙️',
@@ -82,24 +91,6 @@ const Sidebar: React.FC = () => {
               </li>
             ))}
           </ul>
-        </div>
-
-        <div className="nav-section">
-          <h3 className="nav-title">Module Status</h3>
-          <div className="module-status">
-            <div className="status-item">
-              <span className="status-indicator hr"></span>
-              <span className="status-text">HR: Aktiv</span>
-            </div>
-            <div className="status-item">
-              <span className="status-indicator support"></span>
-              <span className="status-text">Support: Aktiv</span>
-            </div>
-            <div className="status-item">
-              <span className="status-indicator inactive"></span>
-              <span className="status-text">Produktion: Geplant</span>
-            </div>
-          </div>
         </div>
       </nav>
     </aside>
