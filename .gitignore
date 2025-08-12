@@ -15,6 +15,15 @@ build/
 .env.test.local
 .env.production.local
 
+# Environment files (global)
+**/.env
+**/.env.*
+# allow examples/templates
+!**/.env.example
+
+backend/.env
+frontend/.env
+
 # Logs
 logs
 *.log
