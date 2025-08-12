@@ -108,7 +108,7 @@ ENTRA_ADMIN_CENTER_URL=https://entra.microsoft.com
 
 #### External-API-Dependencies
 - Microsoft Graph API
-  - /v1.0/users (select: id, displayName, userPrincipalName, mail, department, jobTitle, accountEnabled)
+  - /v1.0/users (select: id, displayName, userPrincipalName, mail, department, jobTitle, accountEnabled, createdDateTime, lastSignInDateTime, givenName, surname, officeLocation, streetAddress, city, state, country, postalCode, mobilePhone, businessPhones, faxNumber, companyName, employeeId, employeeType, costCenter, division, signInSessionsValidFromDateTime, passwordPolicies, usageLocation, preferredLanguage, aboutMe, assignedLicenses, assignedPlans, userType, onPremisesSecurityIdentifier, onPremisesSyncEnabled, onPremisesDistinguishedName, onPremisesDomainName, onPremisesSamAccountName) + $expand=manager($select=id,displayName)
   - /v1.0/devices (select: id, displayName, deviceId, operatingSystem, operatingSystemVersion, trustType, accountEnabled)
   - Auth: Client Credentials (MSAL) → scope: https://graph.microsoft.com/.default
 
@@ -141,6 +141,36 @@ ENTRA_ADMIN_CENTER_URL=https://entra.microsoft.com
 #### Source-Typen (manual/external)
 - manual: CRUD erlaubt, In-Memory-Store, UUID-IDs, CreatedBy/UpdatedBy
 - external (entra): read-only, Quelle ist Microsoft Graph Sync
+
+#### Module↔DataSources Consumption (Global Rules)
+- Lesen aus DataSources: Standard ist die kombinierte Quelle (entra + manual) über `entraac/combined.ts`
+  - `getCombinedUsers(source: all|entra|manual)`
+  - `findCombinedUsers({ source, department?, accountEnabled? })`
+- Schreiben in DataSources: Erlaubt ist ausschließlich die manuelle Quelle (`manual`). Externe Quelle (`entra`) ist strikt read-only.
+- Mapping-Konventionen (Combined → Modul-Entity):
+  - `displayName` → `firstName`/`lastName`
+  - `mail`/`userPrincipalName` → `email`
+  - `jobTitle` → `position`
+  - `department` → `department`
+  - `accountEnabled` → `status` (active/inactive/pending)
+- Stats: Aggregationen über `getCombinedStats()`
+- Imports: Nur zentrale Re-Exports aus `backend/src/datasources/index.ts` verwenden (keine direkten Graph-Calls in Modulen)
+- Dokumentations-Pflicht (bei JEDEM Modul, das DataSources nutzt):
+  - `docs/INTERDEPENDENCY.md`: Modul-spezifische Bindings ergänzen (siehe HR-Beispiel)
+  - `docs/modules/[module]/README.md`: DataSources-Integration dokumentieren (Lesen/Schreiben/Mapping)
+  - `docs/modules/[module]/API.md`: Semantik pro Endpoint (read=combined, write=manual)
+  - `docs/CHANGELOG.md`: Unveröffentlicht-Eintrag „Docs/Integrations“
+  - `docs/architecture/entra-id-user-schema.md`: Diagramm-Referenz für Entra-Benutzerdaten
+
+#### HR ↔ DataSources Bindings
+- Lesen (combined): `getCombinedUsers('all')`, `findCombinedUsers({ source: 'all' | 'entra' | 'manual', ... })`
+- Schreiben (nur manual): `createManualUser`, `updateManualUser`, `deleteManualUser`
+- Stats: `getCombinedStats()`
+- API-Bindings (HR):
+  - `GET /api/hr/employees` → liest aus combined
+  - `GET /api/hr/employees/:id` → liest aus combined
+  - `POST /api/hr/employees` → schreibt in `manual`
+  - `PUT /api/hr/employees/:employeeId` → aktualisiert in `manual`
 
 ### 1. AUTHENTIFIZIERUNG (SHARED DEPENDENCY)
 

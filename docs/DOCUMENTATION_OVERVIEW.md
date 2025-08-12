@@ -3,7 +3,7 @@
 ## 📚 Vollständige Dokumentationsstruktur erstellt!
 
 **Erstellt am:** 8. Dezember 2024  
-**Letzte Aktualisierung:** 8. Dezember 2024  
+**Letzte Aktualisierung:** 12. August 2025  
 **Version:** 2.1.0  
 **Status:** ✅ Vollständig implementiert + Sicherheits- & DataSources-Updates
 
@@ -28,7 +28,8 @@ docs/
 │       └── CHANGELOG.md              # Support-Änderungshistorie
 └── architecture/                     # Technische Architektur-Docs
     ├── overview.md                   # System-Architektur Übersicht
-    └── module-guidelines.md          # Modul-Entwicklungsrichtlinien
+    ├── module-guidelines.md          # Modul-Entwicklungsrichtlinien
+    └── entra-id-user-schema.md       # Diagramm: Entra ID Benutzer-Schema
 ```
 
 ## 📋 Dokumentations-Inhalte
@@ -72,7 +73,7 @@ docs/
 
 #### [modules/hr/README.md](./modules/hr/README.md) - HR-Modul Übersicht
 - **Inhalt:** Vollständige HR-Modul Dokumentation
-- **Umfang:** 400+ Zeilen
+- **Umfang:** 400+ Zeilen (erweitert um DataSources‑Integration)
 - **Abdeckt:**
   - Modul-Zweck und implementierte Funktionen
   - Technische Implementation und Architektur
@@ -81,7 +82,7 @@ docs/
 
 #### [modules/hr/API.md](./modules/hr/API.md) - HR-API Dokumentation
 - **Inhalt:** Detaillierte API-Dokumentation
-- **Umfang:** 600+ Zeilen
+- **Umfang:** 600+ Zeilen (erweitert: Lese/Schreib‑Semantik combined/manual)
 - **Abdeckt:**
   - Alle 8 API-Endpunkte mit Beispielen
   - Request/Response-Schemas

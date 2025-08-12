@@ -1,15 +1,69 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/HRPages.css';
 
-interface Employee {
+// Combined User aus DataSources (Entra + Manuell)
+interface CombinedUser {
   id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  department: string;
-  position: string;
-  startDate: string;
-  status: 'active' | 'inactive' | 'pending';
+  displayName: string;
+  userPrincipalName?: string;
+  mail?: string;
+  department?: string;
+  jobTitle?: string;
+  accountEnabled?: boolean;
+  source: 'entra' | 'manual';
+  createdDateTime?: string;
+  lastSignInDateTime?: string;
+  
+  // Persönliche Informationen
+  givenName?: string;
+  surname?: string;
+  officeLocation?: string;
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  mobilePhone?: string;
+  businessPhones?: string[];
+  faxNumber?: string;
+  
+  // Organisatorische Informationen
+  companyName?: string;
+  employeeId?: string;
+  employeeType?: string;
+  costCenter?: string;
+  division?: string;
+  manager?: {
+    id: string;
+    displayName: string;
+  };
+  
+  // Technische/Account-Informationen
+  signInSessionsValidFromDateTime?: string;
+  passwordPolicies?: string;
+  usageLocation?: string;
+  preferredLanguage?: string;
+  aboutMe?: string;
+  
+  // Lizenzen & Apps
+  assignedLicenses?: Array<{
+    skuId: string;
+    disabledPlans?: string[];
+  }>;
+  assignedPlans?: Array<{
+    assignedDateTime: string;
+    capabilityStatus: string;
+    service: string;
+    servicePlanId: string;
+  }>;
+  
+  // Sicherheit & Sync
+  userType?: string;
+  onPremisesSecurityIdentifier?: string;
+  onPremisesSyncEnabled?: boolean;
+  onPremisesDistinguishedName?: string;
+  onPremisesDomainName?: string;
+  onPremisesSamAccountName?: string;
 }
 
 interface APIResponse<T> {
@@ -19,30 +73,35 @@ interface APIResponse<T> {
   message?: string;
 }
 
-interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
+// API Antwort von /api/data/users liefert direkt ein Array in data
 
 const EmployeesPage: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<CombinedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<'all' | 'manual' | 'entra'>('entra');
   const [filters, setFilters] = useState({
     department: '',
     status: '',
     search: ''
   });
+  const [selectedEmployee, setSelectedEmployee] = useState<CombinedUser | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createForm, setCreateForm] = useState({
+    displayName: '',
+    mail: '',
+    department: '',
+    jobTitle: '',
+    accountEnabled: true,
+  });
 
   useEffect(() => {
     loadEmployees();
-  }, [filters]);
+  }, [filters, dataSource]);
 
   const loadEmployees = async () => {
     try {
@@ -56,29 +115,31 @@ const EmployeesPage: React.FC = () => {
       }
 
       const params = new URLSearchParams();
+      params.append('source', dataSource);
       if (filters.department) params.append('department', filters.department);
-      if (filters.status) params.append('status', filters.status);
-      params.append('limit', '20');
+      // Mappe Status-Filter auf accountEnabled (active=true, inactive=false)
+      if (filters.status === 'active') params.append('accountEnabled', 'true');
+      if (filters.status === 'inactive') params.append('accountEnabled', 'false');
 
-      const response = await fetch(`http://localhost:5000/api/hr/employees?${params}`, {
+      const response = await fetch(`http://localhost:5000/api/data/users?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      const result: APIResponse<PaginatedResponse<Employee>> = await response.json();
+      const result: APIResponse<CombinedUser[]> = await response.json();
 
-      if (result.success && result.data) {
-        let employeeData = result.data.data;
+      if (result.success && Array.isArray(result.data)) {
+        let employeeData = result.data;
 
         // Client-side Search Filter
         if (filters.search) {
           const searchTerm = filters.search.toLowerCase();
           employeeData = employeeData.filter(emp =>
-            emp.firstName.toLowerCase().includes(searchTerm) ||
-            emp.lastName.toLowerCase().includes(searchTerm) ||
-            emp.email.toLowerCase().includes(searchTerm)
+            emp.displayName.toLowerCase().includes(searchTerm) ||
+            (emp.mail || '').toLowerCase().includes(searchTerm) ||
+            (emp.userPrincipalName || '').toLowerCase().includes(searchTerm)
           );
         }
 
@@ -94,17 +155,19 @@ const EmployeesPage: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: Employee['status']) => {
-    const statusMap = {
-      active: { label: 'Aktiv', class: 'status-active' },
-      inactive: { label: 'Inaktiv', class: 'status-inactive' },
-      pending: { label: 'Ausstehend', class: 'status-pending' }
-    };
-    return statusMap[status] || { label: status, class: 'status-unknown' };
+  // Hinweis: frühere getDataSourceInfo() entfernt, da ungenutzt
+
+  const getStatusBadge = (emp: CombinedUser) => {
+    if (emp.accountEnabled === true) return { label: 'Aktiv', class: 'status-active' };
+    if (emp.accountEnabled === false) return { label: 'Inaktiv', class: 'status-inactive' };
+    return { label: 'Unbekannt', class: 'status-unknown' };
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-DE');
+  const getInitials = (displayName: string) => {
+    const parts = displayName.trim().split(' ');
+    const first = parts[0]?.[0] || '';
+    const last = parts[parts.length - 1]?.[0] || '';
+    return `${first}${last}`.toUpperCase();
   };
 
   const getDepartmentIcon = (department: string) => {
@@ -118,6 +181,109 @@ const EmployeesPage: React.FC = () => {
     return icons[department] || '🏢';
   };
 
+  const handleSync = async () => {
+    try {
+      setSyncing(true);
+      setSyncMessage(null);
+
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setSyncMessage('Keine Authentifizierung gefunden');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/data/sync', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setSyncMessage(result.message || 'Synchronisation erfolgreich');
+        await loadEmployees();
+      } else {
+        setSyncMessage(result.message || 'Synchronisation fehlgeschlagen');
+      }
+    } catch (e) {
+      setSyncMessage('Fehler bei der Synchronisation');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const openCreateModal = () => {
+    setCreateForm({
+      displayName: '',
+      mail: '',
+      department: '',
+      jobTitle: '',
+      accountEnabled: true,
+    });
+    setCreateError(null);
+    setShowCreateModal(true);
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setCreateLoading(false);
+    setCreateError(null);
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setCreateLoading(true);
+      setCreateError(null);
+
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setCreateError('Keine Authentifizierung gefunden');
+        return;
+      }
+
+      const body: any = {
+        displayName: createForm.displayName.trim(),
+        mail: createForm.mail.trim() || undefined,
+        department: createForm.department.trim() || undefined,
+        jobTitle: createForm.jobTitle.trim() || undefined,
+        accountEnabled: createForm.accountEnabled,
+      };
+
+      // UserPrincipalName automatisch aus E-Mail generieren, falls E-Mail vorhanden
+      if (createForm.mail.trim()) {
+        body.userPrincipalName = createForm.mail.trim();
+      }
+
+      const response = await fetch('http://localhost:5000/api/data/users', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      const result: APIResponse<CombinedUser> = await response.json();
+      if (!result.success || !result.data) {
+        setCreateError(result.message || 'Erstellung fehlgeschlagen');
+        return;
+      }
+
+      setSyncMessage('Neuer Mitarbeiter erfolgreich angelegt');
+      setShowCreateModal(false);
+      await loadEmployees();
+      setSelectedEmployee(result.data);
+      setDataSource('manual');
+    } catch (err) {
+      setCreateError('Fehler beim Erstellen des Mitarbeiters');
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   return (
     <div className="hr-page">
       <div className="page-header">
@@ -126,11 +292,21 @@ const EmployeesPage: React.FC = () => {
           <p>Zentrale Verwaltung aller Mitarbeiterinformationen</p>
         </div>
         <div className="page-actions">
-          <button className="btn btn-primary">
+          <button className="btn btn-primary" onClick={openCreateModal}>
             ➕ Neuer Mitarbeiter
+          </button>
+          <button className="btn btn-secondary" onClick={handleSync} disabled={syncing || loading} style={{ marginLeft: '0.5rem' }}>
+            {syncing ? '🔄 Synchronisiere...' : '🔄 Daten synchronisieren'}
           </button>
         </div>
       </div>
+
+      {syncMessage && (
+        <div className="content-section">
+          <p>{syncMessage}</p>
+        </div>
+      )}
+
 
       {/* Filter Section */}
       <div className="filters-section">
@@ -174,7 +350,18 @@ const EmployeesPage: React.FC = () => {
               <option value="pending">Ausstehend</option>
             </select>
           </div>
-          
+          <div className="filter-group">
+            <label>Datenquelle:</label>
+            <select
+              value={dataSource}
+              onChange={(e) => setDataSource(e.target.value as 'all' | 'manual' | 'entra')}
+              className="filter-select"
+            >
+              <option value="all">🔄 Alle Quellen</option>
+              <option value="entra">🏢 Entra Admin Center</option>
+              <option value="manual">✋ Manuell</option>
+            </select>
+          </div>
           <button 
             className="btn btn-secondary"
             onClick={() => setFilters({ department: '', status: '', search: '' })}
@@ -213,52 +400,310 @@ const EmployeesPage: React.FC = () => {
         )}
 
         {!loading && !error && employees.length > 0 && (
-          <div className="employees-grid">
+          <div className={`employees-layout${selectedEmployee ? ' selected' : ''}`}>
+            <div className="employees-list">
             {employees.map((employee) => (
-              <div key={employee.id} className="employee-card">
+                <div
+                  key={employee.id}
+                  className={`employee-card compact${selectedEmployee?.id === employee.id ? ' selected' : ''}`}
+                  onClick={() => setSelectedEmployee(employee)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setSelectedEmployee(employee); } }}
+                >
                 <div className="employee-header">
                   <div className="employee-avatar">
-                    {employee.firstName[0]}{employee.lastName[0]}
+                    {getInitials(employee.displayName)}
                   </div>
                   <div className="employee-basic">
-                    <h3>{employee.firstName} {employee.lastName}</h3>
-                    <p className="employee-email">{employee.email}</p>
+                    <h3>{employee.displayName}</h3>
+                    <p className="employee-email">{employee.mail || employee.userPrincipalName || ''}</p>
+                    <div className="employee-source">
+                      <span className={`source-badge source-${employee.source}`}>
+                        {employee.source === 'manual' ? '✋ Manuell' : '🏢 Entra ID'}
+                      </span>
+                    </div>
                   </div>
-                  <div className={`status-badge ${getStatusBadge(employee.status).class}`}>
-                    {getStatusBadge(employee.status).label}
+                  <div className={`status-badge ${getStatusBadge(employee).class}`}>
+                    {getStatusBadge(employee).label}
+                  </div>
+                </div>
+                </div>
+              ))}
+            </div>
+            <div className="employees-detail">
+              {selectedEmployee && (
+                <div className="employee-detail-panel">
+                  <div className="detail-header">
+                    <div className="employee-avatar large">
+                      {getInitials(selectedEmployee.displayName)}
+                    </div>
+                    <div className="detail-title">
+                      <h2>{selectedEmployee.displayName}</h2>
+                      <p className="employee-email">{selectedEmployee.mail || selectedEmployee.userPrincipalName || ''}</p>
+                      <div className="employee-source">
+                        <span className={`source-badge source-${selectedEmployee.source}`}>
+                          {selectedEmployee.source === 'manual' ? '✋ Manuell' : '🏢 Entra ID'}
+                        </span>
+                        <span className={`status-badge ${getStatusBadge(selectedEmployee).class}`} style={{ marginLeft: '8px' }}>
+                          {getStatusBadge(selectedEmployee).label}
+                        </span>
+                      </div>
                   </div>
                 </div>
                 
-                <div className="employee-details">
+                  <div className="detail-sections">
+                    {/* Persönliche Informationen */}
+                    <div className="detail-section">
+                      <h4>👤 Persönliche Informationen</h4>
+                      {selectedEmployee.givenName && (
+                        <div className="detail-row">
+                          <span className="detail-icon">👤</span>
+                          <span className="detail-label">Vorname:</span>
+                          <span className="detail-value">{selectedEmployee.givenName}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.surname && (
+                        <div className="detail-row">
+                          <span className="detail-icon">👤</span>
+                          <span className="detail-label">Nachname:</span>
+                          <span className="detail-value">{selectedEmployee.surname}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.employeeId && (
+                        <div className="detail-row">
+                          <span className="detail-icon">🆔</span>
+                          <span className="detail-label">Mitarbeiter-ID:</span>
+                          <span className="detail-value">{selectedEmployee.employeeId}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.userType && (
                   <div className="detail-row">
-                    <span className="detail-icon">{getDepartmentIcon(employee.department)}</span>
-                    <span className="detail-label">Abteilung:</span>
-                    <span className="detail-value">{employee.department}</span>
+                          <span className="detail-icon">👥</span>
+                          <span className="detail-label">Benutzertyp:</span>
+                          <span className="detail-value">{selectedEmployee.userType}</span>
+                        </div>
+                      )}
                   </div>
                   
+                    {/* Organisatorische Informationen */}
+                    <div className="detail-section">
+                      <h4>🏢 Organisation</h4>
+                      <div className="detail-row">
+                        <span className="detail-icon">{getDepartmentIcon(selectedEmployee.department || '')}</span>
+                        <span className="detail-label">Abteilung:</span>
+                        <span className="detail-value">{selectedEmployee.department || '-'}</span>
+                      </div>
                   <div className="detail-row">
                     <span className="detail-icon">💼</span>
                     <span className="detail-label">Position:</span>
-                    <span className="detail-value">{employee.position}</span>
+                        <span className="detail-value">{selectedEmployee.jobTitle || '-'}</span>
+                      </div>
+                      {selectedEmployee.companyName && (
+                        <div className="detail-row">
+                          <span className="detail-icon">🏢</span>
+                          <span className="detail-label">Unternehmen:</span>
+                          <span className="detail-value">{selectedEmployee.companyName}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.employeeType && (
+                        <div className="detail-row">
+                          <span className="detail-icon">👔</span>
+                          <span className="detail-label">Anstellungsart:</span>
+                          <span className="detail-value">{selectedEmployee.employeeType}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.costCenter && (
+                        <div className="detail-row">
+                          <span className="detail-icon">💰</span>
+                          <span className="detail-label">Kostenstelle:</span>
+                          <span className="detail-value">{selectedEmployee.costCenter}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.division && (
+                        <div className="detail-row">
+                          <span className="detail-icon">🏬</span>
+                          <span className="detail-label">Geschäftsbereich:</span>
+                          <span className="detail-value">{selectedEmployee.division}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.manager && (
+                        <div className="detail-row">
+                          <span className="detail-icon">👨‍💼</span>
+                          <span className="detail-label">Vorgesetzter:</span>
+                          <span className="detail-value">{selectedEmployee.manager.displayName}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Kontaktinformationen */}
+                    <div className="detail-section">
+                      <h4>📞 Kontakt</h4>
+                      {selectedEmployee.mobilePhone && (
+                        <div className="detail-row">
+                          <span className="detail-icon">📱</span>
+                          <span className="detail-label">Mobil:</span>
+                          <span className="detail-value">{selectedEmployee.mobilePhone}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.businessPhones && selectedEmployee.businessPhones.length > 0 && (
+                        <div className="detail-row">
+                          <span className="detail-icon">☎️</span>
+                          <span className="detail-label">Telefon:</span>
+                          <span className="detail-value">{selectedEmployee.businessPhones.join(', ')}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.faxNumber && (
+                        <div className="detail-row">
+                          <span className="detail-icon">📠</span>
+                          <span className="detail-label">Fax:</span>
+                          <span className="detail-value">{selectedEmployee.faxNumber}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.officeLocation && (
+                        <div className="detail-row">
+                          <span className="detail-icon">🏢</span>
+                          <span className="detail-label">Büro:</span>
+                          <span className="detail-value">{selectedEmployee.officeLocation}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Adresse */}
+                    {(selectedEmployee.streetAddress || selectedEmployee.city || selectedEmployee.country) && (
+                      <div className="detail-section">
+                        <h4>📍 Adresse</h4>
+                        {selectedEmployee.streetAddress && (
+                          <div className="detail-row">
+                            <span className="detail-icon">🏠</span>
+                            <span className="detail-label">Straße:</span>
+                            <span className="detail-value">{selectedEmployee.streetAddress}</span>
+                          </div>
+                        )}
+                        {selectedEmployee.city && (
+                          <div className="detail-row">
+                            <span className="detail-icon">🏙️</span>
+                            <span className="detail-label">Stadt:</span>
+                            <span className="detail-value">
+                              {selectedEmployee.postalCode && `${selectedEmployee.postalCode} `}{selectedEmployee.city}
+                            </span>
+                          </div>
+                        )}
+                        {selectedEmployee.state && (
+                          <div className="detail-row">
+                            <span className="detail-icon">🗺️</span>
+                            <span className="detail-label">Bundesland:</span>
+                            <span className="detail-value">{selectedEmployee.state}</span>
+                          </div>
+                        )}
+                        {selectedEmployee.country && (
+                          <div className="detail-row">
+                            <span className="detail-icon">🌍</span>
+                            <span className="detail-label">Land:</span>
+                            <span className="detail-value">{selectedEmployee.country}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Technische Informationen */}
+                    <div className="detail-section">
+                      <h4>🔧 Technische Details</h4>
+                      {selectedEmployee.preferredLanguage && (
+                        <div className="detail-row">
+                          <span className="detail-icon">🌐</span>
+                          <span className="detail-label">Sprache:</span>
+                          <span className="detail-value">{selectedEmployee.preferredLanguage}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.usageLocation && (
+                        <div className="detail-row">
+                          <span className="detail-icon">📍</span>
+                          <span className="detail-label">Standort:</span>
+                          <span className="detail-value">{selectedEmployee.usageLocation}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.createdDateTime && (
+                        <div className="detail-row">
+                          <span className="detail-icon">📅</span>
+                          <span className="detail-label">Erstellt:</span>
+                          <span className="detail-value">{new Date(selectedEmployee.createdDateTime).toLocaleDateString('de-DE')}</span>
+                        </div>
+                      )}
+                      {selectedEmployee.lastSignInDateTime && (
+                        <div className="detail-row">
+                          <span className="detail-icon">🔑</span>
+                          <span className="detail-label">Letzte Anmeldung:</span>
+                          <span className="detail-value">{new Date(selectedEmployee.lastSignInDateTime).toLocaleDateString('de-DE')}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Lizenzen */}
+                    {selectedEmployee.assignedLicenses && selectedEmployee.assignedLicenses.length > 0 && (
+                      <div className="detail-section">
+                        <h4>📄 Lizenzen</h4>
+                        {selectedEmployee.assignedLicenses.map((license, index) => (
+                          <div key={index} className="detail-row">
+                            <span className="detail-icon">📋</span>
+                            <span className="detail-label">Lizenz:</span>
+                            <span className="detail-value">{license.skuId}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* On-Premises Sync Info */}
+                    {(selectedEmployee.onPremisesSyncEnabled || selectedEmployee.onPremisesDomainName) && (
+                      <div className="detail-section">
+                        <h4>🔄 On-Premises</h4>
+                        {selectedEmployee.onPremisesDomainName && (
+                          <div className="detail-row">
+                            <span className="detail-icon">🏢</span>
+                            <span className="detail-label">Domäne:</span>
+                            <span className="detail-value">{selectedEmployee.onPremisesDomainName}</span>
+                          </div>
+                        )}
+                        {selectedEmployee.onPremisesSamAccountName && (
+                          <div className="detail-row">
+                            <span className="detail-icon">👤</span>
+                            <span className="detail-label">SAM Account:</span>
+                            <span className="detail-value">{selectedEmployee.onPremisesSamAccountName}</span>
+                          </div>
+                        )}
+                        {selectedEmployee.onPremisesSyncEnabled !== undefined && (
+                          <div className="detail-row">
+                            <span className="detail-icon">🔄</span>
+                            <span className="detail-label">Sync aktiviert:</span>
+                            <span className="detail-value">{selectedEmployee.onPremisesSyncEnabled ? 'Ja' : 'Nein'}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Über mich */}
+                    {selectedEmployee.aboutMe && (
+                      <div className="detail-section">
+                        <h4>📝 Über mich</h4>
+                        <div className="detail-text">
+                          {selectedEmployee.aboutMe}
                   </div>
-                  
-                  <div className="detail-row">
-                    <span className="detail-icon">📅</span>
-                    <span className="detail-label">Startdatum:</span>
-                    <span className="detail-value">{formatDate(employee.startDate)}</span>
-                  </div>
+                      </div>
+                    )}
                 </div>
                 
                 <div className="employee-actions">
-                  <button className="btn btn-small btn-secondary">
-                    👁️ Details
+                    <button className="btn btn-small btn-secondary" onClick={() => setSelectedEmployee(null)}>
+                      ✖️ Schließen
                   </button>
                   <button className="btn btn-small btn-primary">
                     ✏️ Bearbeiten
                   </button>
                 </div>
               </div>
-            ))}
+              )}
+            </div>
+            {selectedEmployee && <div className="employees-spacer"></div>}
           </div>
         )}
       </div>
@@ -269,8 +714,62 @@ const EmployeesPage: React.FC = () => {
           <p>
             <strong>{employees.length}</strong> Mitarbeiter angezeigt
             {filters.department && ` in ${filters.department}`}
-            {filters.status && ` mit Status "${getStatusBadge(filters.status as Employee['status']).label}"`}
+            {filters.status && ` mit Status "${filters.status === 'active' ? 'Aktiv' : filters.status === 'inactive' ? 'Inaktiv' : 'Ausstehend'}"`}
           </p>
+        </div>
+      )}
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={closeCreateModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>➕ Neuen Mitarbeiter anlegen</h3>
+            </div>
+            <form onSubmit={handleCreateSubmit}>
+              <div className="modal-body">
+                {createError && <div className="error-state" style={{padding: '8px'}}>{createError}</div>}
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Anzeigename</label>
+                    <input className="filter-input" value={createForm.displayName} onChange={(e) => setCreateForm(v => ({...v, displayName: e.target.value}))} required />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>E-Mail</label>
+                    <input className="filter-input" type="email" value={createForm.mail} onChange={(e) => setCreateForm(v => ({...v, mail: e.target.value}))} />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Abteilung</label>
+                    <input className="filter-input" value={createForm.department} onChange={(e) => setCreateForm(v => ({...v, department: e.target.value}))} />
+                  </div>
+                  <div className="form-group">
+                    <label>Position</label>
+                    <input className="filter-input" value={createForm.jobTitle} onChange={(e) => setCreateForm(v => ({...v, jobTitle: e.target.value}))} />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <label className="checkbox">
+                    <input type="checkbox" checked={createForm.accountEnabled} onChange={(e) => setCreateForm(v => ({...v, accountEnabled: e.target.checked}))} />
+                    Konto aktiv
+                  </label>
+                </div>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn btn-secondary" onClick={closeCreateModal} disabled={createLoading}>Abbrechen</button>
+                <button type="submit" className="btn btn-primary" disabled={createLoading}>
+                  {createLoading ? 'Speichere…' : 'Speichern'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
@@ -278,3 +777,4 @@ const EmployeesPage: React.FC = () => {
 };
 
 export default EmployeesPage;
+

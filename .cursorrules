@@ -356,6 +356,54 @@ docs/modules/[module-name]/
 ❌ .env Änderungen ohne Environment-Dependencies-Dokumentation
 ❌ Externe API-Integrationen ohne External-API-Dependencies-Dokumentation
 
+## Module ↔ DataSources Consumption (KRITISCH)
+
+Diese Regeln gelten für JEDES Modul, das Daten aus `backend/src/datasources/` liest oder schreibt.
+
+### Grundsätze
+- **Lesen:** Standard ist die kombinierte Quelle (entra + manual) via `entraac/combined.ts`.
+  - Verwende ausschließlich zentrale Re-Exports: `import { getCombinedUsers, findCombinedUsers, getCombinedStats, createManualUser, updateManualUser, deleteManualUser } from '../../datasources';`
+  - Kein direkter Zugriff auf externe APIs (z. B. Microsoft Graph) aus Modulen.
+- **Schreiben:** Ausschließlich in die manuelle Quelle (`manual`). `entra` ist strikt read-only.
+- **Mapping-Standard (Combined → Modul-Entity):**
+  - `displayName` → `firstName`/`lastName`
+  - `mail`/`userPrincipalName` → `email`
+  - `jobTitle` → `position`
+  - `department` → `department`
+  - `accountEnabled` → `status` (active/inactive/pending)
+- **Audit & Security:**
+  - `logAuthEvent(userId, action, resource)` in Orchestrator-Handlern verwenden
+  - `requireAuth`/`requirePermission` strikt einsetzen
+  - Keine PII in Logs
+
+### Pflichten bei Modul↔DataSources-Verknüpfung (PR/Review-Checklist)
+1. Code-Integration
+   - [ ] Nur zentrale Re-Exports aus `backend/src/datasources/index.ts` importiert
+   - [ ] Lesezugriffe über `getCombinedUsers`/`findCombinedUsers`
+   - [ ] Schreibzugriffe nur über `createManualUser`/`updateManualUser`/`deleteManualUser`
+   - [ ] Einheitliches Mapping auf Modul-Entities implementiert
+   - [ ] Vollständiges Error-Handling (engl. Error-Typ, dt. User-Message)
+   - [ ] `createdBy`/`updatedBy` beim Schreiben gesetzt (wenn verfügbar)
+2. Dokumentation (PFLICHT)
+   - [ ] `docs/INTERDEPENDENCY.md`: Modul-spezifische Bindings ergänzt (lesen=combined, schreiben=manual, Stats, Mapping)
+   - [ ] `docs/modules/[module]/README.md`: DataSources-Integration beschrieben
+   - [ ] `docs/modules/[module]/API.md`: Endpunkt-Semantik (combined/manual) dokumentiert
+   - [ ] `docs/CHANGELOG.md`: Unveröffentlicht → „Docs/Integrations“ Eintrag
+   - [ ] `docs/DOCUMENTATION_OVERVIEW.md`: Umfang/Abdeckung aktualisiert
+3. API/Contracts
+   - [ ] Keine Breaking Changes ohne Changelog + Doc-Updates
+   - [ ] Response-Typen im Modul `types.ts` konsistent mit Mapping
+4. Tests
+   - [ ] PowerShell-Tests für read (combined) und write (manual)
+   - [ ] Error-Szenarien (Forbidden für `entra`-Writes) abgedeckt
+
+### Nicht erlaubt (Hard-Fails)
+- ❌ Direkte externe API-Calls (Graph) aus Modulen
+- ❌ Schreiben in `entra`
+- ❌ Umgehen der zentralen DataSources-Re-Exports
+- ❌ Abweichende Mapping-Keys ohne Dokumentation/Types-Update
+- ❌ Verknüpfungen ohne Doku-Updates gemäß Pflichtliste
+
 ## Bei JEDEM neuen Modul:
 1. ✅ Ordnerstruktur nach Standard erstellen
 2. ✅ types.ts mit allen nötigen Interfaces

@@ -15,6 +15,7 @@ import { swaggerSpec } from './openapi';
 
 // Import DataSources Integration
 import { startDataSourceSync, handleGetUsers, handleGetDevices, handleCreateUser, handleCreateDevice, handleUpdateUser, handleUpdateDevice, handleDeleteUser, handleDeleteDevice, handleGetStats, handleGetSources, handleManualSync, handleGetSyncStatus } from './integrations';
+import { seedManualUsersIfEmpty } from './datasources/manual';
 
 const app = express();
 
@@ -135,6 +136,7 @@ apiRouter.get('/data/sync/status', handleGetSyncStatus);
 app.use('/api', apiRouter);
 
 // Starte DataSources Integration (automatische Synchronisation)
+seedManualUsersIfEmpty();
 startDataSourceSync();
 
 // Default route

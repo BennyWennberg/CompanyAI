@@ -29,6 +29,12 @@ $adminToken = "YWRtaW5AY29tcGFueS5jb20="
 
 ## 👥 Mitarbeiter-Management
 
+## 🧩 Datenquellen-Integration (NEU)
+
+- Lesen: Lese-Endpunkte beziehen Daten aus der kombinierten Quelle (entra + manual).
+- Schreiben: Create/Update wirken ausschließlich auf die manuelle Quelle (`manual`). Einträge aus `entra` sind read‑only.
+- IDs: `employeeId` entspricht der CombinedUser‑ID. Bei Create erzeugt `manual` neue UUIDs.
+
 ### 1. Mitarbeiter auflisten
 
 ```http
@@ -115,6 +121,8 @@ curl -X GET "http://localhost:5000/api/hr/employees/emp_001" \
 
 ### 3. Neuen Mitarbeiter erstellen
 
+Hinweis: Schreibt in `manual` (entra ist read‑only).
+
 ```http
 POST /api/hr/employees
 ```
@@ -169,6 +177,8 @@ curl -X POST "http://localhost:5000/api/hr/employees" \
 ```
 
 ### 4. Mitarbeiter aktualisieren
+
+Hinweis: Aktualisiert Einträge in `manual`. Für `entra`‑Datensätze ist Update nicht möglich.
 
 ```http
 PUT /api/hr/employees/:employeeId

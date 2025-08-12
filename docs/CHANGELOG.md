@@ -12,6 +12,13 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - Produktion-Modul Implementation
 - Erweiterte Sicherheitsfeatures (Rate Limiting, Input Sanitization)
 
+### 🧩 Docs/Integrations
+- HR ↔ DataSources Abhängigkeit dokumentiert (lesen: combined, schreiben: manual)
+- HR‑README und HR‑API um DataSources‑Details ergänzt
+- INTERDEPENDENCY.md erweitert (Global Rules + HR‑Bindings)
+- DOCUMENTATION_OVERVIEW.md entsprechend aktualisiert
+ - Architektur: `docs/architecture/entra-id-user-schema.md` hinzugefügt (Entra ID Benutzer-Schema Diagramm) und verlinkt
+
 ## [2.1.0] - 2024-12-08
 
 ### 🔧 Verbesserungen - Grundkonstrukt-Optimierung

@@ -491,3 +491,48 @@ Memory Usage:
 **Letzte Aktualisierung:** 8. Dezember 2024  
 **Basiert auf:** HR-Modul (Referenz-Implementation)  
 **Status:** Production-Ready Standards
+ 
+## 🧩 Module ↔ DataSources Consumption (Referenz)
+
+### Lesezugriff (combined)
+```typescript
+import { getCombinedUsers, findCombinedUsers, getCombinedStats } from '../../datasources';
+
+const users = getCombinedUsers('all');
+const filtered = findCombinedUsers({ source: 'all', department, accountEnabled });
+```
+
+### Schreibzugriff (nur manual)
+```typescript
+import { createManualUser, updateManualUser, deleteManualUser } from '../../datasources';
+
+const created = createManualUser(payload, createdBy);
+const updated = updateManualUser(id, partial, updatedBy);
+const removed = deleteManualUser(id, deletedBy);
+```
+
+### Mapping-Konvention (CombinedUser → Modul-Entity)
+```typescript
+// Beispiel: Employee aus HR
+function mapCombinedToEmployee(u: CombinedUser): Employee {
+  const [firstName, ...rest] = (u.displayName || '').split(' ');
+  const lastName = rest.join(' ');
+  return {
+    id: u.id,
+    firstName,
+    lastName,
+    email: u.mail || u.userPrincipalName || '',
+    department: u.department || '',
+    position: u.jobTitle || '',
+    startDate: new Date(),
+    status: u.accountEnabled === true ? 'active' : u.accountEnabled === false ? 'inactive' : 'pending'
+  };
+}
+```
+
+### Doku-Pflichten (bei Nutzung von DataSources)
+- INTERDEPENDENCY.md: Modul-Bindings ergänzen (lesen=combined, schreiben=manual, Stats, Mapping)
+- modules/[module]/README.md: DataSources-Integration dokumentieren
+- modules/[module]/API.md: Endpoint-Semantik (combined/manual) ergänzen
+- CHANGELOG.md: Unveröffentlicht → „Docs/Integrations“
+- DOCUMENTATION_OVERVIEW.md: Abdeckung/Umfang aktualisieren

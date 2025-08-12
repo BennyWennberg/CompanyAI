@@ -10,8 +10,6 @@ export * from './store';
 // Synchronization
 export * from './sync';
 
-// Manual Data Management
-export * from './manual';
 
 // Combined Data Access
 export * from './combined';
