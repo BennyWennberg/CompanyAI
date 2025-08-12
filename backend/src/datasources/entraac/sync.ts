@@ -15,17 +15,31 @@ export async function syncUsers(): Promise<EntraUser[]> {
   try {
     console.log('EntraAC: Starting user sync...');
     
+    // Vereinfachter Feldsatz für robuste Synchronisation
     const selectFields = [
       'id',
-      'displayName', 
+      'displayName',
       'userPrincipalName',
       'mail',
       'department',
       'jobTitle',
       'accountEnabled',
-      'createdDateTime'
+      'createdDateTime',
+      'lastSignInDateTime',
+      // zusätzliche, gewöhnlich verfügbare Felder
+      'givenName',
+      'surname',
+      'officeLocation',
+      'mobilePhone',
+      'businessPhones',
+      'companyName',
+      'employeeId',
+      'usageLocation',
+      'preferredLanguage',
+      'userType'
     ].join(',');
 
+    // Ohne $expand=manager, da dies häufig Berechtigungen/Fehler verursacht
     const path = `/v1.0/users?$select=${selectFields}&$top=999&$filter=userType eq 'Member'`;
     const rawUsers = await graphGetAllPages<any>(path);
 
@@ -37,7 +51,50 @@ export async function syncUsers(): Promise<EntraUser[]> {
       department: user.department,
       jobTitle: user.jobTitle,
       accountEnabled: user.accountEnabled,
-      createdDateTime: user.createdDateTime
+      createdDateTime: user.createdDateTime,
+      lastSignInDateTime: user.lastSignInDateTime,
+      
+      // Persönliche Informationen (Basis)
+      givenName: user.givenName,
+      surname: user.surname,
+      officeLocation: user.officeLocation,
+      mobilePhone: user.mobilePhone,
+      businessPhones: user.businessPhones,
+      
+      // Organisatorische Informationen (Basis)
+      companyName: user.companyName,
+      employeeId: user.employeeId,
+      employeeType: undefined,
+      costCenter: undefined,
+      division: undefined,
+      manager: undefined,
+      
+      // Technische/Account-Informationen (Basis)
+      signInSessionsValidFromDateTime: undefined,
+      passwordPolicies: undefined,
+      usageLocation: user.usageLocation,
+      preferredLanguage: user.preferredLanguage,
+      aboutMe: undefined,
+      
+      // Lizenzen & Apps (deaktiviert für Robustheit)
+      assignedLicenses: undefined,
+      assignedPlans: undefined,
+      
+      // Sicherheit & Sync (Basis)
+      userType: user.userType,
+      onPremisesSecurityIdentifier: undefined,
+      onPremisesSyncEnabled: undefined,
+      onPremisesDistinguishedName: undefined,
+      onPremisesDomainName: undefined,
+      onPremisesSamAccountName: undefined,
+
+      // Adresse (deaktiviert für Robustheit)
+      streetAddress: undefined,
+      city: undefined,
+      state: undefined,
+      country: undefined,
+      postalCode: undefined,
+      faxNumber: undefined,
     }));
 
     setUsers(users);

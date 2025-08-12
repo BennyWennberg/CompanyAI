@@ -128,6 +128,8 @@
   min-height: 400px;
 }
 
+/* removed inline-info-banner; reverted to previous layout */
+
 /* Loading State */
 .loading-state {
   display: flex;
@@ -207,11 +209,32 @@
 }
 
 /* Employees Grid */
-.employees-grid {
+/* Employees two-column layout: left 1/3 list, right 2/3 free */
+.employees-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  grid-template-columns: 1fr 2fr;
   gap: 20px;
+  align-items: start;
 }
+
+.employees-layout.selected {
+  grid-template-columns: 1fr 1fr 1fr; /* 1/3 - 1/3 - 1/3 bei ausgewähltem Nutzer */
+}
+
+.employees-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 70vh;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.employees-detail {
+  min-height: 200px;
+}
+
+.employees-spacer { height: 1px; }
 
 .employee-card {
   background: white;
@@ -220,6 +243,24 @@
   padding: 20px;
   transition: all 0.2s;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.employee-card.compact {
+  padding: 12px 14px;
+}
+
+.employee-card.compact .employee-header {
+  margin-bottom: 0;
+}
+
+.employee-card.compact .employee-details,
+.employee-card.compact .employee-actions {
+  display: none;
+}
+
+.employee-card.selected {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
 }
 
 .employee-card:hover {
@@ -247,6 +288,12 @@
   font-weight: 600;
   font-size: 0.9rem;
   flex-shrink: 0;
+}
+
+.employee-avatar.large {
+  width: 64px;
+  height: 64px;
+  font-size: 1.1rem;
 }
 
 .employee-basic {
@@ -324,6 +371,129 @@
   gap: 8px;
   padding-top: 12px;
   border-top: 1px solid #f1f5f9;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  width: 720px;
+  max-width: 95vw;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-actions {
+  padding: 12px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label, .checkbox {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+
+/* Detail Panel */
+.employee-detail-panel {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.employee-detail-panel .detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.employee-detail-panel .detail-title h2 {
+  margin: 0 0 4px 0;
+  font-size: 1.2rem;
+  color: #1e293b;
+}
+
+.detail-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detail-section {
+  margin: 0;
+}
+
+.detail-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #475569;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.detail-text {
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #374151;
+  white-space: pre-wrap;
 }
 
 /* Page Summary */
@@ -510,8 +680,12 @@
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .employees-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  .employees-layout,
+  .employees-layout.selected {
+    grid-template-columns: 1fr;
+  }
+  .employees-list {
+    max-height: none;
   }
   
   .stats-grid {
@@ -538,8 +712,8 @@
   .filter-group {
     min-width: auto;
   }
-  
-  .employees-grid {
+
+  .employees-layout {
     grid-template-columns: 1fr;
   }
   

@@ -12,6 +12,10 @@ Alle Änderungen am HR-Modul von CompanyAI werden hier dokumentiert.
 - [ ] Bulk-Import/Export von Mitarbeiterdaten
 - [ ] Automatisierte Onboarding-Workflows
 
+### 🧩 Docs/Integrations
+- DataSources-Integration dokumentiert (lesen: combined, schreiben: manual)
+- README.md und API.md um DataSources-Semantik ergänzt
+
 ## [2.0.0] - 2024-12-08
 
 ### 🎉 Hinzugefügt - Vollständige HR-Modul Implementation

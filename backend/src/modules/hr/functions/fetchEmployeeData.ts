@@ -1,4 +1,5 @@
-// HR Module - Employee Data Fetching
+// HR Module - Employee Data Fetching (DataSources Integration)
+// Nutzt die Combined DataSources (Entra + Manual) statt eigene Mock-Daten
 
 import { 
   Employee, 
@@ -7,72 +8,40 @@ import {
   PaginatedResponse 
 } from '../types';
 
-// Mock-Daten für Mitarbeiter
-const mockEmployees: Employee[] = [
-  {
-    id: 'emp_001',
-    firstName: 'Max',
-    lastName: 'Mustermann',
-    email: 'max.mustermann@company.com',
-    department: 'IT',
-    position: 'Senior Developer',
-    startDate: new Date('2022-03-15'),
-    status: 'active'
-  },
-  {
-    id: 'emp_002',
-    firstName: 'Anna',
-    lastName: 'Schmidt',
-    email: 'anna.schmidt@company.com',
-    department: 'Sales',
-    position: 'Sales Manager',
-    startDate: new Date('2021-08-01'),
-    status: 'active'
-  },
-  {
-    id: 'emp_003',
-    firstName: 'Thomas',
-    lastName: 'Weber',
-    email: 'thomas.weber@company.com',
-    department: 'Marketing',
-    position: 'Marketing Specialist',
-    startDate: new Date('2023-01-10'),
-    status: 'active'
-  },
-  {
-    id: 'emp_004',
-    firstName: 'Lisa',
-    lastName: 'Müller',
-    email: 'lisa.mueller@company.com',
-    department: 'HR',
-    position: 'HR Manager',
-    startDate: new Date('2020-05-20'),
-    status: 'active'
-  },
-  {
-    id: 'emp_005',
-    firstName: 'Peter',
-    lastName: 'Neumann',
-    email: 'peter.neumann@company.com',
-    department: 'IT',
-    position: 'Junior Developer',
-    startDate: new Date('2023-09-01'),
-    status: 'pending'
-  },
-  {
-    id: 'emp_006',
-    firstName: 'Sarah',
-    lastName: 'Fischer',
-    email: 'sarah.fischer@company.com',
-    department: 'Sales',
-    position: 'Sales Representative',
-    startDate: new Date('2019-11-15'),
-    status: 'inactive'
-  }
-];
+// Import Combined DataSources
+import { 
+  getCombinedUsers, 
+  findCombinedUsers, 
+  getCombinedStats,
+  createManualUser,
+  updateManualUser,
+  deleteManualUser,
+  CombinedUser,
+  DataSource 
+} from '../../../datasources';
 
 /**
- * Lädt Mitarbeiterdaten basierend auf den Filterkriterien
+ * Konvertiert CombinedUser zu Employee Format
+ */
+function convertToEmployee(user: CombinedUser): Employee {
+  const nameParts = user.displayName.split(' ');
+  const firstName = nameParts[0] || '';
+  const lastName = nameParts.slice(1).join(' ') || '';
+  
+  return {
+    id: user.id,
+    firstName,
+    lastName,
+    email: user.mail || user.userPrincipalName || '',
+    department: user.department || '',
+    position: user.jobTitle || '',
+    startDate: new Date(), // Placeholder - könnte aus createdAt abgeleitet werden
+    status: user.accountEnabled === true ? 'active' : user.accountEnabled === false ? 'inactive' : 'pending'
+  };
+}
+
+/**
+ * Lädt Mitarbeiterdaten basierend auf den Filterkriterien (aus DataSources)
  */
 export async function fetchEmployeeData(
   request: FetchEmployeeDataRequest
@@ -86,27 +55,25 @@ export async function fetchEmployeeData(
       offset = 0 
     } = request;
 
-    let filteredEmployees = [...mockEmployees];
+    // Nutze Combined DataSources statt Mock-Daten
+    let filteredUsers = findCombinedUsers({
+      source: 'all',
+      department,
+      accountEnabled: status === 'active' ? true : status === 'inactive' ? false : undefined
+    });
 
-    // Filter anwenden
+    // Filter nach employeeId
     if (employeeId) {
-      filteredEmployees = filteredEmployees.filter(emp => emp.id === employeeId);
+      filteredUsers = filteredUsers.filter(user => user.id === employeeId);
     }
 
-    if (department) {
-      filteredEmployees = filteredEmployees.filter(emp => 
-        emp.department.toLowerCase() === department.toLowerCase()
-      );
-    }
-
-    if (status) {
-      filteredEmployees = filteredEmployees.filter(emp => emp.status === status);
-    }
+    // Konvertiere zu Employee Format
+    const employees = filteredUsers.map(convertToEmployee);
 
     // Pagination anwenden
-    const total = filteredEmployees.length;
+    const total = employees.length;
     const page = Math.floor(offset / limit) + 1;
-    const paginatedEmployees = filteredEmployees.slice(offset, offset + limit);
+    const paginatedEmployees = employees.slice(offset, offset + limit);
 
     const response: PaginatedResponse<Employee> = {
       data: paginatedEmployees,
@@ -122,7 +89,7 @@ export async function fetchEmployeeData(
     return {
       success: true,
       data: response,
-      message: `${paginatedEmployees.length} Mitarbeiter gefunden`
+      message: `${paginatedEmployees.length} Mitarbeiter gefunden (aus DataSources)`
     };
 
   } catch (error) {
@@ -136,19 +103,22 @@ export async function fetchEmployeeData(
 }
 
 /**
- * Lädt einen einzelnen Mitarbeiter anhand der ID
+ * Lädt einen einzelnen Mitarbeiter anhand der ID (aus DataSources)
  */
 export async function fetchEmployeeById(employeeId: string): Promise<APIResponse<Employee>> {
   try {
-    const employee = mockEmployees.find(emp => emp.id === employeeId);
+    const users = getCombinedUsers('all');
+    const user = users.find(u => u.id === employeeId);
 
-    if (!employee) {
+    if (!user) {
       return {
         success: false,
         error: 'NotFound',
         message: `Kein Mitarbeiter mit ID ${employeeId} gefunden`
       };
     }
+
+    const employee = convertToEmployee(user);
 
     return {
       success: true,
@@ -167,7 +137,7 @@ export async function fetchEmployeeById(employeeId: string): Promise<APIResponse
 }
 
 /**
- * Erstellt einen neuen Mitarbeiter
+ * Erstellt einen neuen Mitarbeiter (in manueller DataSource)
  */
 export async function createEmployee(
   employeeData: Omit<Employee, 'id'>
@@ -183,21 +153,24 @@ export async function createEmployee(
       };
     }
 
-    // Neue ID generieren
-    const newId = `emp_${String(mockEmployees.length + 1).padStart(3, '0')}`;
-    
-    const newEmployee: Employee = {
-      ...employeeData,
-      id: newId
+    // Konvertiere Employee zu CreateManualUserRequest
+    const userData = {
+      displayName: `${employeeData.firstName} ${employeeData.lastName}`,
+      mail: employeeData.email,
+      userPrincipalName: employeeData.email,
+      department: employeeData.department,
+      jobTitle: employeeData.position,
+      accountEnabled: employeeData.status === 'active'
     };
 
-    // In Mock-Daten hinzufügen (in Produktion: Datenbank)
-    mockEmployees.push(newEmployee);
+    // Erstelle in manueller DataSource
+    const newUser = createManualUser(userData, 'hr-module');
+    const newEmployee = convertToEmployee(newUser);
 
     return {
       success: true,
       data: newEmployee,
-      message: 'Mitarbeiter erfolgreich erstellt'
+      message: 'Mitarbeiter erfolgreich erstellt (in manueller DataSource)'
     };
 
   } catch (error) {
@@ -211,40 +184,42 @@ export async function createEmployee(
 }
 
 /**
- * Aktualisiert einen bestehenden Mitarbeiter
+ * Aktualisiert einen bestehenden Mitarbeiter (nur manuelle DataSource)
  */
 export async function updateEmployee(
   employeeId: string,
   updates: Partial<Omit<Employee, 'id'>>
 ): Promise<APIResponse<Employee>> {
   try {
-    const employeeIndex = mockEmployees.findIndex(emp => emp.id === employeeId);
-
-    if (employeeIndex === -1) {
-      return {
-        success: false,
-        error: 'NotFound',
-        message: `Kein Mitarbeiter mit ID ${employeeId} gefunden`
-      };
+    // Konvertiere Employee Updates zu ManualUser Updates
+    const userUpdates: any = {};
+    
+    if (updates.firstName || updates.lastName) {
+      const firstName = updates.firstName || '';
+      const lastName = updates.lastName || '';
+      userUpdates.displayName = `${firstName} ${lastName}`.trim();
+    }
+    
+    if (updates.email) {
+      userUpdates.mail = updates.email;
+      userUpdates.userPrincipalName = updates.email;
+    }
+    
+    if (updates.department) {
+      userUpdates.department = updates.department;
+    }
+    
+    if (updates.position) {
+      userUpdates.jobTitle = updates.position;
+    }
+    
+    if (updates.status) {
+      userUpdates.accountEnabled = updates.status === 'active';
     }
 
-    // Mitarbeiter aktualisieren
-    const updatedEmployee = {
-      ...mockEmployees[employeeIndex],
-      ...updates
-    };
-
-    // Validierung der aktualisierten Daten
-    const validationErrors = validateEmployeeData(updatedEmployee);
-    if (validationErrors.length > 0) {
-      return {
-        success: false,
-        error: 'ValidationError',
-        message: validationErrors.join(', ')
-      };
-    }
-
-    mockEmployees[employeeIndex] = updatedEmployee;
+    // Aktualisiere in manueller DataSource
+    const updatedUser = updateManualUser(employeeId, userUpdates, 'hr-module');
+    const updatedEmployee = convertToEmployee(updatedUser);
 
     return {
       success: true,
@@ -254,6 +229,15 @@ export async function updateEmployee(
 
   } catch (error) {
     console.error('Fehler beim Aktualisieren des Mitarbeiters:', error);
+    
+    if (error instanceof Error && error.message.includes('nicht gefunden')) {
+      return {
+        success: false,
+        error: 'NotFound',
+        message: `Kein manueller Mitarbeiter mit ID ${employeeId} gefunden`
+      };
+    }
+    
     return {
       success: false,
       error: 'InternalServerError',
@@ -310,7 +294,7 @@ function isValidEmail(email: string): boolean {
 }
 
 /**
- * Gibt Statistiken über Mitarbeiter zurück
+ * Gibt Statistiken über Mitarbeiter zurück (aus Combined DataSources)
  */
 export async function getEmployeeStats(): Promise<APIResponse<{
   totalEmployees: number;
@@ -319,29 +303,30 @@ export async function getEmployeeStats(): Promise<APIResponse<{
   averageTenure: number;
 }>> {
   try {
-    const totalEmployees = mockEmployees.length;
+    // Nutze Combined DataSources Stats
+    const combinedStats = getCombinedStats();
+    const allUsers = getCombinedUsers('all');
+    
+    // Konvertiere zu Employee-kompatiblen Statistiken
+    const totalEmployees = allUsers.length;
     
     // Statistiken nach Abteilung
-    const byDepartment = mockEmployees.reduce((acc, emp) => {
-      acc[emp.department] = (acc[emp.department] || 0) + 1;
+    const byDepartment = allUsers.reduce((acc, user) => {
+      const dept = user.department || 'Unbekannt';
+      acc[dept] = (acc[dept] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Statistiken nach Status
-    const byStatus = mockEmployees.reduce((acc, emp) => {
-      acc[emp.status] = (acc[emp.status] || 0) + 1;
+    // Statistiken nach Status (basierend auf accountEnabled)
+    const byStatus = allUsers.reduce((acc, user) => {
+      const status = user.accountEnabled === true ? 'active' : 
+                    user.accountEnabled === false ? 'inactive' : 'pending';
+      acc[status] = (acc[status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Durchschnittliche Betriebszugehörigkeit in Monaten
-    const now = new Date();
-    const totalTenureMonths = mockEmployees.reduce((acc, emp) => {
-      const tenureMs = now.getTime() - emp.startDate.getTime();
-      const tenureMonths = tenureMs / (1000 * 60 * 60 * 24 * 30.44); // Durchschnittliche Tage pro Monat
-      return acc + tenureMonths;
-    }, 0);
-    
-    const averageTenure = totalEmployees > 0 ? totalTenureMonths / totalEmployees : 0;
+    // Placeholder für durchschnittliche Betriebszugehörigkeit
+    const averageTenure = 12; // Monate - könnte aus createdAt berechnet werden
 
     return {
       success: true,
@@ -349,9 +334,9 @@ export async function getEmployeeStats(): Promise<APIResponse<{
         totalEmployees,
         byDepartment,
         byStatus,
-        averageTenure: Math.round(averageTenure * 100) / 100 // Auf 2 Dezimalstellen runden
+        averageTenure
       },
-      message: 'Mitarbeiterstatistiken erfolgreich geladen'
+      message: 'Mitarbeiterstatistiken erfolgreich geladen (aus DataSources)'
     };
 
   } catch (error) {

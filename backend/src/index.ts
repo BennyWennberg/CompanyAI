@@ -1,3 +1,7 @@
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.join(__dirname, '..', '..', 'backend', '.env') });
+
 import app from './app';
 
 const PORT = process.env.PORT || 5000;

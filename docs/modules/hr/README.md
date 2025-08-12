@@ -119,11 +119,18 @@ interface HRMetrics {
 - **Logging:** Umfassendes Audit-Logging
 - **Middleware:** Express-Middleware für Sicherheit
 
+### Datenquellen-Integration (NEU)
+- Quellen: `backend/src/datasources/entraac` (read-only via Sync) und `backend/src/datasources/manual` (read/write)
+- Lesen: `getCombinedUsers`, `findCombinedUsers` (Quelle: `all` als Standard)
+- Schreiben: `createManualUser`, `updateManualUser`, `deleteManualUser` (nur `manual`)
+- Mapping: CombinedUser → Employee (`displayName`, `mail`/`userPrincipalName`, `department`, `jobTitle`, `accountEnabled`)
+- Stats: `getCombinedStats` für aggregierte Kennzahlen
+
 #### 4. Geschäftslogik (`functions/`)
 - **Separation of Concerns:** Eine Funktion pro Datei
 - **Async/Await:** Moderne Promise-basierte Architektur
 - **Validation:** Umfassende Eingabevalidierung
-- **Mock-Data:** Entwicklungsfreundliche Test-Daten
+- **DataSources-gestützt:** Mitarbeiter-CRUD und Statistiken über Combined/Manual statt reine Mock-Daten
 
 ### Datenbank-Schema (Mock - Vorbereitung für echte DB)
 
@@ -200,7 +207,7 @@ Authorization: Bearer aHIuc3BlY2lhbGlzdEBjb21wYW55LmNvbQ==
 ## 🔄 Bekannte Limitierungen
 
 ### Aktuelle Einschränkungen
-1. **Mock-Daten:** Keine persistente Datenhaltung
+1. **Persistenz:** Manuelle Quelle ist In‑Memory; Entra ist read‑only via Sync (keine DB‑Persistenz)
 2. **Einfache Auth:** Token-basiert ohne JWT
 3. **File-Upload:** Keine Dokumenten-Uploads
 4. **Email-Benachrichtigungen:** Nicht implementiert

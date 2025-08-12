@@ -222,6 +222,82 @@ export function updateManualDevice(id: string, updates: Partial<CreateManualDevi
 }
 
 /**
+ * Seedet die manuellen Benutzer mit den bisherigen HR-Mock-Mitarbeitern (nur, wenn noch leer)
+ */
+export function seedManualUsersIfEmpty(): void {
+  if (manualUsers.length > 0) {
+    return;
+  }
+
+  const seed = [
+    {
+      displayName: 'Max Mustermann',
+      userPrincipalName: 'max.mustermann@company.com',
+      mail: 'max.mustermann@company.com',
+      department: 'IT',
+      jobTitle: 'Senior Developer',
+      accountEnabled: true
+    },
+    {
+      displayName: 'Max Test Mustermann',
+      userPrincipalName: 'max.medsustermann@company.com',
+      mail: 'max.mustermann@wedscompany.com',
+      department: 'IwT',
+      jobTitle: 'Seniwor Developer',
+      accountEnabled: true
+    },
+    {
+      displayName: 'Anna Schmidt',
+      userPrincipalName: 'anna.schmidt@company.com',
+      mail: 'anna.schmidt@company.com',
+      department: 'Sales',
+      jobTitle: 'Sales Manager',
+      accountEnabled: true
+    },
+    {
+      displayName: 'Thomas Weber',
+      userPrincipalName: 'thomas.weber@company.com',
+      mail: 'thomas.weber@company.com',
+      department: 'Marketing',
+      jobTitle: 'Marketing Specialist',
+      accountEnabled: true
+    },
+    {
+      displayName: 'Lisa Müller',
+      userPrincipalName: 'lisa.mueller@company.com',
+      mail: 'lisa.mueller@company.com',
+      department: 'HR',
+      jobTitle: 'HR Manager',
+      accountEnabled: true
+    },
+    {
+      displayName: 'Peter Neumann',
+      userPrincipalName: 'peter.neumann@company.com',
+      mail: 'peter.neumann@company.com',
+      department: 'IT',
+      jobTitle: 'Junior Developer',
+      accountEnabled: true // aus "pending" abgeleitet
+    },
+    {
+      displayName: 'Sarah Fischer',
+      userPrincipalName: 'sarah.fischer@company.com',
+      mail: 'sarah.fischer@company.com',
+      department: 'Sales',
+      jobTitle: 'Sales Representative',
+      accountEnabled: false // aus "inactive" abgeleitet
+    }
+  ] as CreateManualUserRequest[];
+
+  for (const u of seed) {
+    try {
+      createManualUser(u, 'system-seed');
+    } catch {
+      // ignorieren, falls durch Duplikat-Prüfung verhindert
+    }
+  }
+}
+
+/**
  * Löscht einen manuellen Benutzer
  */
 export function deleteManualUser(id: string): boolean {
