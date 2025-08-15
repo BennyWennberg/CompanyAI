@@ -1,12 +1,11 @@
+@import '../../hr/styles/HRPages.css';
+
 /* Support Module Pages - Shared Styles */
 
 .support-page {
   width: 100%;
   max-width: 100%;
 }
-
-/* Inherit base styles from HR module */
-@import '../../hr/styles/HRPages.css';
 
 /* Support-specific styles */
 

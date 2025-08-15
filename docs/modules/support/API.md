@@ -383,7 +383,7 @@ $updated = Invoke-RestMethod -Uri "http://localhost:5000/api/support/tickets/$($
 ```
 
 ### Vollständiger Test
-Das Support-Modul ist im bereitgestellten PowerShell-Script `test-modules.ps1` integriert.
+Das Support-Modul ist im bereitgestellten PowerShell-Script `tools/test-modules.ps1` integriert.
 
 ## 🔄 Aktuelle Limitierungen
 

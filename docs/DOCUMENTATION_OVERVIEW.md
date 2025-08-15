@@ -3,8 +3,8 @@
 ## 📚 Vollständige Dokumentationsstruktur erstellt!
 
 **Erstellt am:** 8. Dezember 2024  
-**Letzte Aktualisierung:** 12. August 2025  
-**Version:** 2.1.0  
+**Letzte Aktualisierung:** 14. August 2025  
+**Version:** 2.2.0  
 **Status:** ✅ Vollständig implementiert + Sicherheits- & DataSources-Updates
 
 Diese Übersicht zeigt die komplette Dokumentationsstruktur, die für CompanyAI erstellt wurde.
@@ -26,6 +26,10 @@ docs/
 │       ├── README.md                 # Support-Modul Übersicht
 │       ├── API.md                    # Support-API Dokumentation
 │       └── CHANGELOG.md              # Support-Änderungshistorie
+│   └── ai/                            # AI-Modul Dokumentation
+│       ├── README.md                  # AI-Modul Übersicht
+│       ├── API.md                     # AI- und RAG-API Dokumentation
+│       └── CHANGELOG.md               # AI-Änderungshistorie
 └── architecture/                     # Technische Architektur-Docs
     ├── overview.md                   # System-Architektur Übersicht
     ├── module-guidelines.md          # Modul-Entwicklungsrichtlinien
@@ -68,6 +72,19 @@ docs/
   - **Quick-Reference:** KI-Guidelines für konsistente Feature-Entwicklung
 - **Wichtigkeit:** ⭐⭐⭐⭐⭐ KRITISCH für alle neuen Entwicklungen
 - **Nutzung:** ERSTE Referenz vor jeder neuen Feature-Implementation
+
+### 🤖 AI-Modul Dokumentation (NEU in v2.2.0)
+
+#### [modules/ai/README.md](./modules/ai/README.md) - AI-Modul Übersicht
+- Inhalt: Direkt-Provider Chat (OpenAI, Gemini, Ollama) + RAG-Konzept
+- Abdeckt: Provider-Strategie, Sicherheit (Keys), RAG-Index-Strategie, Uploads
+
+#### [modules/ai/API.md](./modules/ai/API.md) - AI- und RAG-API
+- Endpunkte: `/api/ai/chat`, `/api/ai/hr-assist`, `/api/ai/rag/*`
+- Request/Response-Beispiele (OpenAI-kompatibel), Auth (requirePermission)
+
+#### [modules/ai/CHANGELOG.md](./modules/ai/CHANGELOG.md) - AI-Änderungshistorie
+- Versionierung für AI-spezifische Änderungen
 
 ### 🏢 HR-Modul Dokumentation
 
@@ -168,7 +185,6 @@ docs/
 # backend/.env
 NODE_ENV=development
 PORT=5000
-OPENWEBUI_URL=http://localhost:3000
 RAG_INDEX_PATH=./backend/rag_index.json
 RAG_EMBEDDING_MODEL=text-embedding-3-small
 # Entra ID / Microsoft Graph
@@ -178,9 +194,13 @@ AZURE_CLIENT_SECRET=...
 GRAPH_BASE_URL=https://graph.microsoft.com
 ENTRA_SYNC_ENABLED=true
 ENTRA_SYNC_INTERVAL_MS=3600000
-# Optional bei Cloud-LLMs:
-# OPENAI_API_KEY=sk-...
-# OPENWEBUI_API_KEY=...
+# AI / RAG
+OPENAI_API_KEY=sk-...
+# GEMINI_API_KEY=...
+OLLAMA_URL=http://localhost:11434
+RAG_INDEX_PATH=./backend/rag_index.json
+RAG_EMBEDDING_PROVIDER=openai  # openai | gemini | ollama
+RAG_EMBEDDING_MODEL=text-embedding-3-small
 ```
 
 ```
@@ -240,7 +260,7 @@ VITE_SIDEBAR_WIDTH=280px
 
 ### Für Tester
 1. **API testen:** API.md Dateien mit PowerShell-Beispielen
-2. **Test-Automation:** `test-modules.ps1` Script
+2. **Test-Automation:** `tools/test-modules.ps1` Script
 3. **Error-Szenarien:** Error-Handling-Abschnitte
 
 ## 🔄 Wartung & Updates

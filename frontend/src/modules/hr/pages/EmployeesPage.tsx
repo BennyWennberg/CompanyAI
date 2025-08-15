@@ -98,6 +98,7 @@ const EmployeesPage: React.FC = () => {
     jobTitle: '',
     accountEnabled: true,
   });
+  const [departmentOptions, setDepartmentOptions] = useState<Array<{ name: string; count: number }>>([]);
 
   useEffect(() => {
     loadEmployees();
@@ -116,7 +117,6 @@ const EmployeesPage: React.FC = () => {
 
       const params = new URLSearchParams();
       params.append('source', dataSource);
-      if (filters.department) params.append('department', filters.department);
       // Mappe Status-Filter auf accountEnabled (active=true, inactive=false)
       if (filters.status === 'active') params.append('accountEnabled', 'true');
       if (filters.status === 'inactive') params.append('accountEnabled', 'false');
@@ -141,6 +141,55 @@ const EmployeesPage: React.FC = () => {
             (emp.mail || '').toLowerCase().includes(searchTerm) ||
             (emp.userPrincipalName || '').toLowerCase().includes(searchTerm)
           );
+        }
+
+        // Erzeuge dynamische Abteilungs-Optionen (bekannte + "Unbekannt" zusammengefasst), alphabetisch sortiert, mit Counts
+        const deptCountMap = employeeData.reduce((acc: Record<string, number>, emp) => {
+          const raw = (emp.department || '').trim();
+          if (!raw) return acc;
+          const lower = raw.toLowerCase();
+          if (lower === 'unbekannt' || lower === 'unknown') return acc;
+          acc[raw] = (acc[raw] || 0) + 1;
+          return acc;
+        }, {});
+
+        const unknownCount = employeeData.reduce((count, emp) => {
+          const raw = (emp.department || '').trim();
+          if (!raw) return count + 1;
+          const lower = raw.toLowerCase();
+          return (lower === 'unbekannt' || lower === 'unknown') ? count + 1 : count;
+        }, 0);
+
+        let options = Object.entries(deptCountMap)
+          .sort(([a], [b]) => a.localeCompare(b, 'de', { sensitivity: 'base' }))
+          .map(([name, count]) => ({ name, count }));
+        if (unknownCount > 0) {
+          options = [...options, { name: 'Unbekannt', count: unknownCount }]
+            .sort((a, b) => a.name.localeCompare(b.name, 'de', { sensitivity: 'base' }));
+        }
+        setDepartmentOptions(options);
+
+        // Client-side Department Filter anwenden
+        if (filters.department) {
+          const filterLower = filters.department.toLowerCase();
+          if (filters.department === '__known__') {
+            // Nur Mitarbeiter mit bekannter Abteilung (nicht leer/Unbekannt/Unknown)
+            employeeData = employeeData.filter(emp => {
+              const raw = (emp.department || '').trim();
+              if (!raw) return false;
+              const lower = raw.toLowerCase();
+              return lower !== 'unbekannt' && lower !== 'unknown';
+            });
+          } else if (filterLower === 'unbekannt') {
+            employeeData = employeeData.filter(emp => {
+              const raw = (emp.department || '').trim();
+              if (!raw) return true;
+              const lower = raw.toLowerCase();
+              return lower === 'unbekannt' || lower === 'unknown';
+            });
+          } else {
+            employeeData = employeeData.filter(emp => (emp.department || '').trim() === filters.department);
+          }
         }
 
         setEmployees(employeeData);
@@ -302,8 +351,9 @@ const EmployeesPage: React.FC = () => {
       </div>
 
       {syncMessage && (
-        <div className="content-section">
-          <p>{syncMessage}</p>
+        <div className="inline-info-banner" role="status" aria-live="polite">
+          <span className="info-icon">ℹ️</span>
+          <span className="info-text">{syncMessage}</span>
         </div>
       )}
 
@@ -330,10 +380,19 @@ const EmployeesPage: React.FC = () => {
               className="filter-select"
             >
               <option value="">Alle Abteilungen</option>
-              <option value="IT">IT</option>
-              <option value="Sales">Sales</option>
-              <option value="Marketing">Marketing</option>
-              <option value="HR">HR</option>
+              {/* Mit Abteilung (nur bekannte Abteilungen) */}
+              {departmentOptions.length > 0 && (
+                <option value="__known__">
+                  {`Mit Abteilung (${departmentOptions.reduce((sum, o) => {
+                    const nameLower = o.name.toLowerCase();
+                    if (nameLower === 'unbekannt' || nameLower === 'unknown') return sum;
+                    return sum + o.count;
+                  }, 0)})`}
+                </option>
+              )}
+              {departmentOptions.map(opt => (
+                <option key={opt.name} value={opt.name}>{`${opt.name} (${opt.count})`}</option>
+              ))}
             </select>
           </div>
           

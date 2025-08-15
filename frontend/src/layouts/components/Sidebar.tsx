@@ -41,7 +41,8 @@ const Sidebar: React.FC = () => {
       icon: '🤖',
       active: location.pathname.startsWith('/ai'),
       submenu: [
-        { title: 'Chat', path: '/ai/chat', icon: '💬' }
+        { title: 'Chat', path: '/ai/chat', icon: '💬' },
+        { title: 'Dokumente', path: '/ai/docs', icon: '📚' }
       ]
     },
     {

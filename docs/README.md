@@ -76,7 +76,7 @@ docs/
 ### Installation & Start
 ```powershell
 # Alle Dependencies installieren
-.\install-all.ps1
+.\tools\install-all.ps1
 
 # Backend starten (Port 5000)
 cd backend
@@ -87,7 +87,7 @@ cd frontend
 npm run dev
 
 # Oder beide gleichzeitig starten
-npm run dev:all
+npm run dev
 ```
 
 ### API-Zugriff
@@ -163,7 +163,8 @@ Authorization: Bearer aHIubWFuYWdlckBjb21wYW55LmNvbQ==
 ## 🔍 Quick Links
 
 - **API-Dokumentation:** http://localhost:5000/api/hello
-- **Modul-Tests:** `.\test-modules.ps1`
+- **Modul-Tests:** `.\tools\test-modules.ps1`
+- **Integrationstest:** `.\tools\test-frontend-integration.ps1`
 - **Backend-Logs:** Console-Output beim `npm run dev`
 - **Code-Regeln:** `.cursorrules` (Cursor IDE)
 

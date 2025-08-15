@@ -254,15 +254,27 @@ export async function createDetailedHRReport(
  * Berechnet Abteilungsaufschlüsselung
  */
 function calculateDepartmentBreakdown(employees: Employee[]) {
-  const breakdown = employees.reduce((acc, emp) => {
-    acc[emp.department] = (acc[emp.department] || 0) + 1;
+  // Nur bekannte Abteilungen berücksichtigen (ohne "Unbekannt"/"Unknown"/leer)
+  const employeesWithKnownDept = employees.filter(emp => {
+    const deptRaw = (emp.department || '').trim();
+    if (!deptRaw) return false;
+    const deptLower = deptRaw.toLowerCase();
+    return deptLower !== 'unbekannt' && deptLower !== 'unknown';
+  });
+
+  const breakdown = employeesWithKnownDept.reduce((acc, emp) => {
+    const dept = (emp.department || '').trim();
+    if (!dept) return acc;
+    acc[dept] = (acc[dept] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
+
+  const totalKnown = employeesWithKnownDept.length || 1;
 
   return Object.entries(breakdown).map(([department, count]) => ({
     department,
     count,
-    percentage: Math.round((count / employees.length) * 100 * 100) / 100
+    percentage: Math.round((count / totalKnown) * 100 * 100) / 100
   }));
 }
 

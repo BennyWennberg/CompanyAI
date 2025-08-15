@@ -125,8 +125,8 @@ CompanyAI/
 │   ├── modules/               # Modul-spezifische Docs
 │   └── architecture/          # Technische Dokumentation
 ├── package.json                # Root-Package für Scripts
-├── install-all.ps1            # Setup-Automation
-├── test-modules.ps1           # Test-Automation
+├── tools/install-all.ps1      # Setup-Automation
+├── tools/test-modules.ps1     # Test-Automation
 └── .cursorrules               # Development-Guidelines
 ```
 

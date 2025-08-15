@@ -200,7 +200,7 @@ backend/src/modules/support/
 ### 🧪 Testing & Quality Assurance
 
 #### Verfügbare Tests
-- ✅ **PowerShell-Test-Script** Integration in `test-modules.ps1`:
+- ✅ **PowerShell-Test-Script** Integration in `tools/test-modules.ps1`:
   ```powershell
   # Ticket erstellen
   $newTicket = @{

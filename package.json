@@ -5,17 +5,23 @@
   "private": true,
   "workspaces": ["frontend", "backend"],
   "scripts": {
-    "dev": "concurrently \"npm run -w backend dev\" \"npm run -w frontend dev\"",
+    "dev": "npm run check:rules && concurrently \"npm run -w backend dev\" \"npm run -w frontend dev\"",
     "dev:frontend": "npm run -w frontend dev",
     "dev:backend": "npm run -w backend dev",
     "install:all": "npm install",
     "install:frontend": "npm install -w frontend", 
     "install:backend": "npm install -w backend",
+    "prebuild": "npm run check:rules",
     "build": "npm run build:backend && npm run build:frontend",
     "build:backend": "npm run -w backend build",
     "build:frontend": "npm run -w frontend build",
     "lint": "npm run -w frontend lint",
-    "test": "echo \"Tests werden bald hinzugefügt\" && exit 0"
+    "test": "echo \"Tests werden bald hinzugefügt\" && exit 0",
+    "tools:install": "powershell -ExecutionPolicy Bypass -File tools/install-all.ps1",
+    "tools:setup": "powershell -ExecutionPolicy Bypass -File tools/setup-improved.ps1",
+    "tools:test:modules": "powershell -ExecutionPolicy Bypass -File tools/test-modules.ps1",
+    "tools:test:integration": "powershell -ExecutionPolicy Bypass -File tools/test-frontend-integration.ps1",
+    "check:rules": "powershell -ExecutionPolicy Bypass -File tools/verify-rules.ps1"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

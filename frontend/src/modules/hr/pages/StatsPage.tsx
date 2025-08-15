@@ -117,26 +117,31 @@ const StatsPage: React.FC = () => {
               <div className="stat-content">
                 <h3>👔 Mitarbeiter nach Abteilung</h3>
                 <div className="department-stats">
-                  {Object.entries(stats.byDepartment).map(([dept, count]) => (
-                    <div key={dept} className="department-item">
-                      <div className="department-info">
-                        <span className="department-name">{dept}</span>
-                        <span className="department-count">{count} Mitarbeiter</span>
+                  {(() => {
+                    const totalKnownDepartments = Object.values(stats.byDepartment).reduce((sum, c) => sum + c, 0) || 1;
+                    const sortedEntries = Object.entries(stats.byDepartment)
+                      .sort(([a], [b]) => a.localeCompare(b, 'de', { sensitivity: 'base' }));
+                    return sortedEntries.map(([dept, count]) => (
+                      <div key={dept} className="department-item">
+                        <div className="department-info">
+                          <span className="department-name">{dept}</span>
+                          <span className="department-count">{count} Mitarbeiter</span>
+                        </div>
+                        <div className="department-bar">
+                          <div 
+                            className="department-fill"
+                            style={{ 
+                              width: `${(count / totalKnownDepartments) * 100}%`,
+                              background: getDepartmentColor(dept)
+                            }}
+                          ></div>
+                        </div>
+                        <span className="department-percentage">
+                          {((count / totalKnownDepartments) * 100).toFixed(1)}%
+                        </span>
                       </div>
-                      <div className="department-bar">
-                        <div 
-                          className="department-fill"
-                          style={{ 
-                            width: `${(count / stats.totalEmployees) * 100}%`,
-                            background: getDepartmentColor(dept)
-                          }}
-                        ></div>
-                      </div>
-                      <span className="department-percentage">
-                        {((count / stats.totalEmployees) * 100).toFixed(1)}%
-                      </span>
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </div>
               </div>
             </div>

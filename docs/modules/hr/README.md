@@ -191,7 +191,7 @@ Authorization: Bearer aHIuc3BlY2lhbGlzdEBjb21wYW55LmNvbQ==
 ## 🧪 Testing & Qualitätssicherung
 
 ### Verfügbare Tests
-1. **Manuelle API-Tests:** PowerShell-Script `test-modules.ps1`
+1. **Manuelle API-Tests:** PowerShell-Script `tools/test-modules.ps1`
 2. **Postman-Collection:** [Verfügbar auf Anfrage]
 3. **Unit-Tests:** [Geplant für v2.1]
 4. **Integration-Tests:** [Geplant für v2.1]

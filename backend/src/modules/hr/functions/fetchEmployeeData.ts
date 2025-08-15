@@ -310,10 +310,13 @@ export async function getEmployeeStats(): Promise<APIResponse<{
     // Konvertiere zu Employee-kompatiblen Statistiken
     const totalEmployees = allUsers.length;
     
-    // Statistiken nach Abteilung
+    // Statistiken nach Abteilung (ohne "Unbekannt"/"Unknown")
     const byDepartment = allUsers.reduce((acc, user) => {
-      const dept = user.department || 'Unbekannt';
-      acc[dept] = (acc[dept] || 0) + 1;
+      const deptRaw = (user.department || '').trim();
+      if (!deptRaw) return acc;
+      const deptLower = deptRaw.toLowerCase();
+      if (deptLower === 'unbekannt' || deptLower === 'unknown') return acc;
+      acc[deptRaw] = (acc[deptRaw] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 

@@ -19,6 +19,12 @@ und dieses Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 - DOCUMENTATION_OVERVIEW.md entsprechend aktualisiert
  - Architektur: `docs/architecture/entra-id-user-schema.md` hinzugefügt (Entra ID Benutzer-Schema Diagramm) und verlinkt
 
+### 🤖 AI / RAG
+- AI‑Modul (Direkt‑Provider Chat + RAG) dokumentiert:
+  - `docs/modules/ai/API.md` um Endpunkte `/api/ai/chat`, `/api/ai/hr-assist`, `/api/ai/rag/*` erweitert
+  - `docs/INTERDEPENDENCY.md` um AI/RAG Dependencies (ENV, Storage, Frontend-Bindings) ergänzt
+  - `docs/DOCUMENTATION_OVERVIEW.md` um AI‑Modul‑Sektion + ENV‑Beispiele erweitert
+
 ## [2.1.0] - 2024-12-08
 
 ### 🔧 Verbesserungen - Grundkonstrukt-Optimierung
@@ -143,7 +149,7 @@ backend/src/modules/
   - TypeScript-Integration
   - Basis-Styling mit CSS
 - **Development-Tools**:
-  - install-all.ps1 Script für PowerShell-Setup
+  - tools/install-all.ps1 Script für PowerShell-Setup
   - Package.json Scripts für Development
   - Git-Repository Initialisierung
 
@@ -163,7 +169,7 @@ CompanyAI/
 │       ├── App.tsx
 │       └── App.css
 ├── package.json               # Root-Package für Scripts
-├── install-all.ps1           # PowerShell Setup-Script
+├── tools/install-all.ps1     # PowerShell Setup-Script
 └── README.md                 # Basis-Dokumentation
 ```
 

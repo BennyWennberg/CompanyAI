@@ -64,7 +64,7 @@ app.get('/api/hello', (req, res) => {
         ]
       },
       ai: {
-        description: 'AI Chat & RAG-gestützte Assistenten (OpenWebUI)',
+        description: 'AI Chat (OpenAI/Gemini/Ollama) & RAG-gestützte Assistenten',
         endpoints: [
           'POST /api/ai/chat',
           'POST /api/ai/hr-assist',

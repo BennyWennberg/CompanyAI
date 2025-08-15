@@ -67,18 +67,42 @@ frontend/src/
 └── components/
     └── Dashboard.tsx        # SHARED: System-Übersicht
 
-### AI-Integrationsschicht (v2.1.0)
+### AI-Integrationsschicht (v2.2.0)
 ```
-backend/src/modules/ai/orchestrator.ts   # AI-Routen (chat, hr-assist)
+backend/src/modules/ai/orchestrator.ts   # AI-Routen (chat, hr-assist) – direkte Provider
+backend/src/modules/ai/functions/rag.ts  # RAG Index/Embeddings über Provider
 backend/src/openapi.ts                   # OpenAPI/Swagger Spezifikation
-docs/RAG_DATA_SOURCES.md                 # Datenquellen für RAG
-docs/PROMPT_GUIDELINES.md                # Prompt-Standards
-```
 ```
 
 ---
 
 ## 🔗 Kritische Abhängigkeiten
+
+### AI / RAG (Direkte Provider)
+- **Provider**: OpenAI, Gemini, Ollama
+- **ENV (Backend)**:
+  - `OPENAI_API_KEY` (für provider=openai)
+  - `GEMINI_API_KEY` (für provider=gemini)
+  - `OLLAMA_URL` (für provider=ollama, default http://localhost:11434)
+  - `RAG_INDEX_PATH` (z.B. ./backend/rag_index.json)
+  - `RAG_EMBEDDING_PROVIDER` (openai|gemini|ollama)
+  - `RAG_EMBEDDING_MODEL` (z.B. text-embedding-3-small | text-embedding-004 | nomic-embed-text)
+- **Storage/Docs**:
+  - RAG liest rekursiv alle Markdown-Dateien unter `docs/`
+  - Manuelle Dateien werden nach `docs/uploads/` geschrieben
+- **Frontend-API-Bindings**:
+  - `POST /api/ai/chat` mit `provider`, `model`, `temperature`, `rag`, `ragTopK`
+  - `POST /api/ai/hr-assist` optional `provider`, `model`
+  - `POST /api/ai/rag/reindex` (Admin)
+  - `GET /api/ai/rag/docs` (Liste aller Markdown-Quellen)
+  - `GET /api/ai/rag/doc?path=...` (einzelne Datei als JSON)
+  - `GET /api/ai/rag/doc-raw?path=...` (einzelne Datei als text/markdown)
+  - `POST /api/ai/rag/manual-doc` (manuelle Markdown-Datei hinzufügen, optional reindex)
+- **Frontend-Komponenten**:
+  - `frontend/src/modules/ai/pages/AIChatPage.tsx` (Direkt-Provider-Chat mit optionalem RAG)
+  - `frontend/src/modules/ai/pages/DocsPage.tsx` (Docs-Übersicht, Reindex, manuelle Dateien)
+
+---
 
 ### 0. DataSources/Integrations (KRITISCH)
 
@@ -716,8 +740,8 @@ interface [SharedComponent]Props {
 
 ### Vor Änderungen an Shared Dependencies:
 1. 🔍 **Dependency-Check**: Alle Verwendungsstellen finden
-2. 📋 **Impact-Analysis**: Welche Module sind betroffen?
-3. 🧪 **Test-Plan**: Alle betroffenen Module testen
+2. 📋 **Impact-Analysis**: Welche Modules sind betroffen?
+3. 🧪 **Test-Plan**: Alle betroffenen Modules testen
 4. 📝 **Update-Documentation**: Diese Datei aktualisieren
 
 ---

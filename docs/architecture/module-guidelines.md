@@ -301,7 +301,7 @@ logAuthEvent(
 
 ### 1. PowerShell-Test-Integration
 ```powershell
-# REQUIRED: Integration in test-modules.ps1
+# REQUIRED: Integration in tools/test-modules.ps1
 Write-Host "`n[X]. [Module]-Modul Tests..." -ForegroundColor Yellow
 
 # Test 1: [Funktion] testen
@@ -391,7 +391,7 @@ logger.info('[Module] Action', {
   ```
 - [ ] **API-Dokumentation** in `/api/hello` Route aktualisiert
 - [ ] **Module-Liste** in Health-Check aktualisiert
-- [ ] **PowerShell-Tests** in `test-modules.ps1` hinzugefügt
+- [ ] **PowerShell-Tests** in `tools/test-modules.ps1` hinzugefügt
 
 ### Schritt 3: Dokumentation
 - [ ] **Modul-README** erstellt: `docs/modules/[module]/README.md`

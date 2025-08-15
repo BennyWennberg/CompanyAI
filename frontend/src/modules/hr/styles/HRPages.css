@@ -128,6 +128,27 @@
   min-height: 400px;
 }
 
+/* Compact inline info banner (used for sync messages) */
+.inline-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.inline-info-banner .info-icon {
+  font-size: 1rem;
+}
+
+.inline-info-banner .info-text {
+  font-size: 0.9rem;
+}
+
 /* removed inline-info-banner; reverted to previous layout */
 
 /* Loading State */

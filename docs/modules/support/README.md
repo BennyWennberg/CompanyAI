@@ -212,7 +212,7 @@ curl -X POST "http://localhost:5000/api/support/tickets" \
 ## 🧪 Testing & Qualitätssicherung
 
 ### Verfügbare Tests
-1. **PowerShell-Integration:** Test-Script `test-modules.ps1`
+1. **PowerShell-Integration:** Test-Script `tools/test-modules.ps1`
 2. **Manuelle API-Tests:** Basis-CRUD-Operationen
 3. **Postman-Collection:** [Geplant für v1.1]
 

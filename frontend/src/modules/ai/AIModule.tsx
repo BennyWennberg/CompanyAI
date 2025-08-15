@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import AIChatPage from './AIChatPage';
+import AIChatPage from './pages/AIChatPage';
+import DocsPage from './pages/DocsPage';
 
 const AIModule: React.FC = () => {
   return (
@@ -8,6 +9,7 @@ const AIModule: React.FC = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/ai/chat" replace />} />
         <Route path="/chat" element={<AIChatPage />} />
+        <Route path="/docs" element={<DocsPage />} />
         <Route path="*" element={<Navigate to="/ai/chat" replace />} />
       </Routes>
     </div>

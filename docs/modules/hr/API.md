@@ -545,7 +545,7 @@ $created = Invoke-RestMethod -Uri "http://localhost:5000/api/hr/employees" -Meth
 ```
 
 ### Vollständiger Test
-Nutzen Sie das bereitgestellte PowerShell-Script: `test-modules.ps1`
+Nutzen Sie das bereitgestellte PowerShell-Script: `tools/test-modules.ps1`
 
 ---
 

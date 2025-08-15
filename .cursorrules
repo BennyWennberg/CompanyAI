@@ -1,3 +1,44 @@
+# CompanyAI - PR/Review Rules (Enforced)
+
+## Must-pass Checks (CI / Local)
+- Run `npm run check:rules` before build/merge.
+- Build must pass: `npm run build` runs rule checks via prebuild.
+
+## Documentation Gates (Critical)
+- Any change in `backend/src/datasources/**` or `backend/src/modules/**` touching APIs/routes requires updates to:
+  - `docs/INTERDEPENDENCY.md`
+  - `docs/DOCUMENTATION_OVERVIEW.md`
+  - `docs/CHANGELOG.md`
+  - `docs/modules/[module]/API.md` (if endpoints changed/added)
+  - `docs/modules/[module]/README.md` (if behavior/usage changed)
+- Markdown files are only allowed in `docs/**` and top-level `README.md` (plus optional `backend/README.md`, `frontend/README.md`). Others will fail the check.
+
+## AI / RAG Integration Rules
+- If `backend/src/modules/ai/**` changes:
+  - Ensure `docs/modules/ai/API.md` documents endpoints `/api/ai/chat`, `/api/ai/hr-assist`, `/api/ai/rag/*`.
+  - Ensure `docs/INTERDEPENDENCY.md` contains AI/RAG ENV and Frontend bindings.
+  - Required ENV (if respective provider is used): `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OLLAMA_URL`, `RAG_INDEX_PATH`, `RAG_EMBEDDING_PROVIDER`, `RAG_EMBEDDING_MODEL`.
+
+## Dependency Hygiene
+- Backend: `@types/*` packages must be in `devDependencies` only.
+- Frontend: `react-router-dom` must be v6.x; do not upgrade to v7 without migration plan and doc updates.
+- Remove unused packages; add missing ones used by imports.
+
+## Module Architecture (Backend)
+- New modules follow `backend/src/modules/[module]/` standard: `orchestrator.ts`, `types.ts`, `functions/**`, optional `core/**`.
+- Register routes in `backend/src/app.ts` with `register[Module]Routes(apiRouter)`.
+- Use `AuthenticatedRequest`, `requireAuth`, and `requirePermission` from `hr/core/auth`.
+- All responses use `APIResponse<T>`.
+
+## Frontend Module Standards
+- New modules under `frontend/src/modules/[module]/` with `[Module]Module.tsx`, `pages/**`, `styles/**`.
+- Router registration in `frontend/src/App.tsx`; Sidebar entry in `layouts/components/Sidebar.tsx`.
+- Pages implement loading, error, empty states; use Auth token.
+
+## Always Check Rules
+- On every change request and code review, verify these rules first.
+- Script `tools/verify-rules.ps1` performs automated checks and must pass.
+
 # CompanyAI - Modulbasierte Architektur Regeln
 # Diese Regeln gelten ALLGEMEIN für ALLE Module (Backend und Frontend).
 # Spezifische Beispiele dürfen niemals als Ausnahmen interpretiert werden –

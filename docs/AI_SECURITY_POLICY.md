@@ -24,12 +24,11 @@
 - TLS in produktiven Umgebungen
 - Secrets in .env (nicht im Repo), regelmäßige Rotation
 
-## API Keys & Zugriff (OpenWebUI)
-- OpenWebUI (lokal): Standardmäßig kein API-Key nötig für localhost-Tests.
-- Produktionsbetrieb:
-  - Setze `OPENWEBUI_URL` im `backend/.env`
-  - Wenn ein API-Key/Token für den Upstream nötig ist, speichere ihn als `OPENWEBUI_API_KEY` im `backend/.env` und sende ihn als Header (z. B. `Authorization: Bearer ...`) über die Proxy-Schicht.
-  - Für Cloud-LLMs (OpenAI-kompatibel) verwende `OPENAI_API_KEY`.
+## API Keys & Zugriff (Direkte Provider)
+- OpenAI: `OPENAI_API_KEY` (Server-seitig, nicht an Frontend weitergeben)
+- Gemini: `GEMINI_API_KEY` (Server-seitig)
+- Ollama: `OLLAMA_URL` (lokaler Host, Zugriff beschränken)
+- Berechtigungen/Quotas in den jeweiligen Provider-Konsolen prüfen
 
 ## RAG/Docs
 - Nur freigegebene Dokumente indexieren

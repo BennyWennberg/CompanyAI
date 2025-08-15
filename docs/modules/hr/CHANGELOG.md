@@ -105,7 +105,7 @@ Alle Änderungen am HR-Modul von CompanyAI werden hier dokumentiert.
 - ✅ **Enum-Konstanten** für Kategorien und Status-Werte
 
 #### Development-Tools
-- ✅ **PowerShell-Test-Integration** in `test-modules.ps1`
+- ✅ **PowerShell-Test-Integration** in `tools/test-modules.ps1`
 - ✅ **Mock-Daten-Management** für realistische Entwicklung
 - ✅ **Test-Daten-Generator** für Demo-Zwecke
 - ✅ **Automatische Route-Registrierung** in Hauptanwendung
