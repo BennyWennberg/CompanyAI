@@ -6,6 +6,20 @@ Das Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.0.0/),
 und dieses Projekt folgt [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unveröffentlicht]
+
+### Hinzugefügt
+- **Externe RAG Speicherung**: RAG System unterstützt jetzt externe Ordner für Dokumentenspeicherung
+  - Neue ENV-Variable: `RAG_EXTERNAL_DOCS_PATH` für externen Dokumentenordner
+  - Erweiterte ENV-Variable: `RAG_INDEX_PATH` für externe Index-Datei
+  - Automatische Erstellung externer Ordner falls nicht vorhanden
+  - Frontend zeigt externe/interne Speicherung in DocsPage an
+  - Bessere Trennung zwischen Projekt-Code und RAG-Daten
+
+### Geändert  
+- **AI Module**: Dokumentation komplett überarbeitet für Multi-Provider + externe Speicherung
+- **INTERDEPENDENCY.md**: Erweitert um externe Speicher-Dependencies
+- **Backend .env**: Neue Datei mit vollständiger Konfiguration hinzugefügt
+
 ### Geplant
 - Datenbank-Integration (PostgreSQL/MongoDB)
 - Automatisierte Tests (Jest/Supertest)

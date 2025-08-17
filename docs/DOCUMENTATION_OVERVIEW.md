@@ -75,13 +75,19 @@ docs/
 
 ### 🤖 AI-Modul Dokumentation (NEU in v2.2.0)
 
-#### [modules/ai/README.md](./modules/ai/README.md) - AI-Modul Übersicht
-- Inhalt: Direkt-Provider Chat (OpenAI, Gemini, Ollama) + RAG-Konzept
-- Abdeckt: Provider-Strategie, Sicherheit (Keys), RAG-Index-Strategie, Uploads
+#### [modules/ai/README.md](./modules/ai/README.md) - AI-Modul Übersicht (⭐ Aktualisiert)
+- **Inhalt**: Multi-Provider Chat + RAG System mit externer Speicherung
+- **Umfang**: 150+ Zeilen (komplett überarbeitet)
+- **Abdeckt**: 
+  - Provider-Unterstützung (OpenAI, Gemini, Ollama)
+  - **NEU**: Externe RAG-Dokumentenspeicherung (`RAG_EXTERNAL_DOCS_PATH`)
+  - Konfiguration und Ordnerstruktur für externe Speicherung
+  - Vorteile der Trennung von Projekt-Code und RAG-Daten
 
 #### [modules/ai/API.md](./modules/ai/API.md) - AI- und RAG-API
-- Endpunkte: `/api/ai/chat`, `/api/ai/hr-assist`, `/api/ai/rag/*`
-- Request/Response-Beispiele (OpenAI-kompatibel), Auth (requirePermission)
+- **Endpunkte**: `/api/ai/chat`, `/api/ai/hr-assist`, `/api/ai/rag/*`
+- **Abdeckt**: Request/Response-Beispiele (OpenAI-kompatibel), Auth (requirePermission)
+- **NEU**: Dokumentenmanagement mit externem Speicher
 
 #### [modules/ai/CHANGELOG.md](./modules/ai/CHANGELOG.md) - AI-Änderungshistorie
 - Versionierung für AI-spezifische Änderungen

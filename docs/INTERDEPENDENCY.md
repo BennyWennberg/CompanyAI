@@ -67,40 +67,76 @@ frontend/src/
 └── components/
     └── Dashboard.tsx        # SHARED: System-Übersicht
 
-### AI-Integrationsschicht (v2.2.0)
+### AI-Integrationsschicht (v2.3.0) - ERWEITERT
 ```
-backend/src/modules/ai/orchestrator.ts   # AI-Routen (chat, hr-assist) – direkte Provider
-backend/src/modules/ai/functions/rag.ts  # RAG Index/Embeddings über Provider
-backend/src/openapi.ts                   # OpenAPI/Swagger Spezifikation
+backend/src/modules/ai/orchestrator.ts           # AI-Routen (chat, hr-assist) – direkte Provider + Session Management + Web-RAG
+backend/src/modules/ai/functions/rag.ts          # RAG Index/Embeddings über Provider
+backend/src/modules/ai/functions/sessions.ts     # NEU: Chat-Session Management (Persistierung, Suche, Tags)
+backend/src/modules/ai/functions/web-rag.ts      # NEU: Web-RAG Integration (Google/Bing/DuckDuckGo + Website-Scraping)
+backend/src/modules/ai/types.ts                  # ERWEITERT: Session & Web-RAG TypeScript Interfaces
+backend/src/openapi.ts                           # OpenAPI/Swagger Spezifikation
 ```
 
 ---
 
 ## 🔗 Kritische Abhängigkeiten
 
-### AI / RAG (Direkte Provider)
+### AI / RAG (Direkte Provider + Externe Speicherung + Session Management + Web-RAG)
 - **Provider**: OpenAI, Gemini, Ollama
 - **ENV (Backend)**:
   - `OPENAI_API_KEY` (für provider=openai)
-  - `GEMINI_API_KEY` (für provider=gemini)
+  - `GEMINI_API_KEY` (für provider=gemini)  
   - `OLLAMA_URL` (für provider=ollama, default http://localhost:11434)
-  - `RAG_INDEX_PATH` (z.B. ./backend/rag_index.json)
+  - `RAG_EXTERNAL_DOCS_PATH` (⭐ NEU: Externer Ordner für RAG Dokumente + Sessions, z.B. C:/CompanyAI-External/docs)
+  - `RAG_INDEX_PATH` (⭐ ERWEITERT: Externe Index-Datei, z.B. C:/CompanyAI-External/rag_index.json)
   - `RAG_EMBEDDING_PROVIDER` (openai|gemini|ollama)
   - `RAG_EMBEDDING_MODEL` (z.B. text-embedding-3-small | text-embedding-004 | nomic-embed-text)
-- **Storage/Docs**:
-  - RAG liest rekursiv alle Markdown-Dateien unter `docs/`
-  - Manuelle Dateien werden nach `docs/uploads/` geschrieben
+  - `WEB_SEARCH_ENABLED` (⭐ NEU: true/false für Web-RAG)
+  - `SERPER_API_KEY` (⭐ NEU: Google Search über Serper.dev, optional)
+  - `BING_API_KEY` (⭐ NEU: Microsoft Bing Search, optional)
+- **Storage/Docs (Externe Speicherung + Sessions)**:
+  - ⭐ **EXTERN**: RAG liest rekursiv alle Markdown-Dateien aus `RAG_EXTERNAL_DOCS_PATH` (falls gesetzt)
+  - ⭐ **EXTERN**: Manuelle Dateien werden nach `RAG_EXTERNAL_DOCS_PATH/uploads/` geschrieben
+  - ⭐ **SESSIONS** (NEU): Chat-Sessions werden nach `RAG_EXTERNAL_DOCS_PATH/chat-sessions/` als JSON gespeichert
+  - 🔄 **FALLBACK**: Falls `RAG_EXTERNAL_DOCS_PATH` nicht gesetzt → interne Speicherung unter `docs/` und `backend/chat-sessions/`
+  - 🔧 **AUTO-CREATE**: Externe Ordner werden automatisch erstellt falls nicht vorhanden
+- **Web-RAG Integration** (NEU):
+  - 🌐 **Web-Suche**: Google (Serper), Bing, DuckDuckGo Integration  
+  - 🔧 **Website-Scraping**: Direkte URL-Inhalte mit jsdom
+  - 🛡️ **Sicherheit**: URL-Validierung, Content-Length-Limits, Timeouts
+  - 📚 **Kombiniert**: Interne Dokumente + Web-Quellen in einer RAG-Response
 - **Frontend-API-Bindings**:
-  - `POST /api/ai/chat` mit `provider`, `model`, `temperature`, `rag`, `ragTopK`
+  - `POST /api/ai/chat` mit `provider`, `model`, `temperature`, `rag`, `ragTopK` + ⭐ **NEU**: `sessionId`, `saveSession`, `sessionTitle`, `tags`, `webRag`, `webSearchQuery`, `websiteUrl`
   - `POST /api/ai/hr-assist` optional `provider`, `model`
   - `POST /api/ai/rag/reindex` (Admin)
   - `GET /api/ai/rag/docs` (Liste aller Markdown-Quellen)
   - `GET /api/ai/rag/doc?path=...` (einzelne Datei als JSON)
   - `GET /api/ai/rag/doc-raw?path=...` (einzelne Datei als text/markdown)
   - `POST /api/ai/rag/manual-doc` (manuelle Markdown-Datei hinzufügen, optional reindex)
+  - ⭐ **Session Management** (NEU):
+    - `POST /api/ai/sessions` (Session erstellen)
+    - `GET /api/ai/sessions/:id` (Session laden)
+    - `PUT /api/ai/sessions/:id` (Session aktualisieren)
+    - `DELETE /api/ai/sessions/:id` (Session löschen)
+    - `GET /api/ai/sessions/search` (Sessions durchsuchen mit Tags/Datum/Text)
+    - `GET /api/ai/sessions/tags` (Verfügbare Tags laden)
 - **Frontend-Komponenten**:
-  - `frontend/src/modules/ai/pages/AIChatPage.tsx` (Direkt-Provider-Chat mit optionalem RAG)
-  - `frontend/src/modules/ai/pages/DocsPage.tsx` (Docs-Übersicht, Reindex, manuelle Dateien)
+  - `frontend/src/modules/ai/pages/AIChatPage.tsx` (⭐ **MASSIV ERWEITERT**: Direkt-Provider-Chat + Session-Management + Web-RAG + Tag-System)
+  - `frontend/src/modules/ai/pages/DocsPage.tsx` (⭐ ERWEITERT: Zeigt externe/interne Speicherung an, Upload in externen Ordner)
+- **Session Management UI** (NEU):
+  - 💬 **Chat-History**: Click-to-Load Sessions mit Metadaten-Anzeige
+  - 🏷️ **Tag-System**: Interaktive Tag-Auswahl, Click-to-Add/Remove
+  - 📊 **Session-Suche**: Text-, Tag- und Datums-basierte Filterung
+  - 🌐 **Web-RAG UI**: Web-Suchbegriff + URL-Eingabe, visuelle Web-vs-Dokument-Quellen-Unterscheidung
+- **Externe Speicher-Dependencies**:
+  - 📁 **Externe Ordner-Struktur**: `RAG_EXTERNAL_DOCS_PATH/` (Haupt-Ordner), `/uploads/` (Manuelle Uploads), `/chat-sessions/` (⭐ NEU: JSON-Sessions)
+  - 📋 **Index-Datei**: `RAG_INDEX_PATH` (JSON mit Embeddings + Chunks)  
+  - 🔒 **Berechtigungen**: Backend benötigt Lese-/Schreibzugriff auf externe Pfade
+  - 🔄 **Trennung**: Projekt-Code getrennt von RAG-Daten (bessere Portabilität, Backup)
+- **NPM-Dependencies** (NEU):
+  - `uuid` (Session-ID-Generierung)
+  - `jsdom` (Website-Scraping für Web-RAG)
+  - `@types/uuid`, `@types/jsdom` (TypeScript-Typen)
 
 ---
 

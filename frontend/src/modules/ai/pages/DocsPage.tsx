@@ -5,6 +5,16 @@ interface DocFile {
   path: string;
   size: number;
   updatedAt: string;
+  isExternal?: boolean;
+}
+
+interface OriginalFile {
+  filename: string;
+  originalName: string;
+  size: number;
+  uploadedAt: string;
+  downloadUrl: string;
+  markdownFile?: string;
 }
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -21,6 +31,7 @@ const STORAGE_KEY = 'ai_rag_api_targets';
 
 const DocsPage: React.FC = () => {
   const [docs, setDocs] = useState<DocFile[]>([]);
+  const [originals, setOriginals] = useState<OriginalFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [apiTargets, setApiTargets] = useState<ApiTarget[]>([]);
@@ -34,13 +45,19 @@ const DocsPage: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [reindexBusy, setReindexBusy] = useState(false);
+  // NEU: Original-File Upload
+  const [selectedOriginalFile, setSelectedOriginalFile] = useState<File | null>(null);
+  const [originalUploadBusy, setOriginalUploadBusy] = useState(false);
 
   const defaultTargets: ApiTarget[] = useMemo(() => ([
     { id: 't_chat', method: 'POST', path: '/api/ai/chat', description: 'Chat mit optionalem RAG (rag=true)', builtin: true },
     { id: 't_docs', method: 'GET', path: '/api/ai/rag/docs', description: 'Listet alle Markdown-Quellen aus docs/', builtin: true },
     { id: 't_manual', method: 'POST', path: '/api/ai/rag/manual-doc', description: 'Fügt eine manuelle Markdown-Datei hinzu', builtin: true },
     { id: 't_reindex', method: 'POST', path: '/api/ai/rag/reindex', description: 'Erstellt den RAG-Index neu', builtin: true },
-    { id: 't_hrassist', method: 'POST', path: '/api/ai/hr-assist', description: 'HR Assist Beispiel mit RAG-Kontext', builtin: true }
+    { id: 't_hrassist', method: 'POST', path: '/api/ai/hr-assist', description: 'HR Assist Beispiel mit RAG-Kontext', builtin: true },
+    { id: 't_upload', method: 'POST', path: '/api/ai/rag/upload-file', description: '📁 Original-Dateien hochladen (NEU)', builtin: true },
+    { id: 't_originals', method: 'GET', path: '/api/ai/rag/originals', description: '📁 Original-Dateien auflisten (NEU)', builtin: true },
+    { id: 't_download', method: 'GET', path: '/api/ai/rag/download/original/:filename', description: '📁 Original-Datei herunterladen (NEU)', builtin: true }
   ]), []);
 
   const loadTargetsFromStorage = () => {
@@ -85,12 +102,24 @@ const DocsPage: React.FC = () => {
       setLoading(true); setError(null);
       const token = localStorage.getItem('authToken');
       if (!token) { setError('Nicht authentifiziert'); return; }
+      
+      // Markdown-Dokumente laden
       const resp = await fetch('/api/ai/rag/docs', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await resp.json();
       if (!data.success) throw new Error(data.message || 'Fehler beim Laden der Dokumente');
       setDocs(data.data || []);
+      
+      // Original-Dateien laden
+      const originalsResp = await fetch('/api/ai/rag/originals', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const originalsData = await originalsResp.json();
+      if (originalsData.success) {
+        setOriginals(originalsData.data || []);
+      }
+      
     } catch (e: any) {
       setError(e.message || 'Fehler beim Laden');
     } finally { setLoading(false); }
@@ -111,11 +140,73 @@ const DocsPage: React.FC = () => {
       if (!data.success) throw new Error(data.message || 'Fehler beim Hinzufügen');
       setManualTitle(''); setManualContent(''); setManualReindex(false);
       loadDocs();
-      alert('Dokument hinzugefügt' + (manualReindex ? ' und Index neu erstellt.' : '.'));
+      const message = data.data?.message || 'Dokument hinzugefügt';
+      alert(message + (manualReindex ? ' und Index neu erstellt.' : '.'));
     } catch (e: any) {
       alert(e.message || 'Fehler beim Hinzufügen');
     } finally {
       setManualBusy(false);
+    }
+  };
+
+  // NEU: Original-Datei Upload
+  const uploadOriginalFile = async () => {
+    if (!selectedOriginalFile) return;
+    
+    setOriginalUploadBusy(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error('Nicht authentifiziert');
+      
+      const formData = new FormData();
+      formData.append('file', selectedOriginalFile);
+      formData.append('reindex', String(manualReindex));
+      
+      const response = await fetch('/api/ai/rag/upload-file', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || 'Upload fehlgeschlagen');
+      
+      setSelectedOriginalFile(null);
+      loadDocs();
+      alert(result.data.message + (manualReindex ? ' und Index neu erstellt.' : '.'));
+      
+    } catch (error: any) {
+      alert('Upload-Fehler: ' + error.message);
+    } finally {
+      setOriginalUploadBusy(false);
+    }
+  };
+
+  // NEU: Original-Datei löschen
+  const deleteOriginalFile = async (filename: string, originalName: string) => {
+    if (!confirm(`Original-Datei "${originalName}" wirklich löschen?\n\nDies entfernt auch die zugehörige Markdown-Datei für RAG.`)) return;
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error('Nicht authentifiziert');
+      
+      const response = await fetch(`/api/ai/rag/originals/${filename}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || 'Löschen fehlgeschlagen');
+      
+      loadDocs();
+      alert(result.message);
+      
+    } catch (error: any) {
+      alert('Lösch-Fehler: ' + error.message);
     }
   };
 
@@ -129,7 +220,7 @@ const DocsPage: React.FC = () => {
       <div className="page-header">
         <div className="page-title">
           <h1>📚 AI Dokumente</h1>
-          <p>RAG liest rekursiv alle Markdown-Dateien aus <code>docs/</code>. Manuelle Uploads landen in <code>docs/uploads/</code>.</p>
+          <p>RAG liest rekursiv alle Markdown-Dateien aus dem konfigurierten Ordner. Dateien werden extern gespeichert (getrennt vom Projekt).</p>
         </div>
         <div className="page-actions">
           <button className="btn btn-secondary" onClick={loadDocs}>🔄 Aktualisieren</button>
@@ -161,8 +252,9 @@ const DocsPage: React.FC = () => {
         {/* Speicherorte Hinweis */}
         <div className="page-summary" style={{ marginBottom: 16 }}>
           <p>
-            Speicherorte: <code>docs/</code> (alle Markdown-Quellen), <code>docs/uploads/</code> (manuell erzeugte Dateien).
-            Der aktuelle RAG-Index wird standardmäßig unter <code>backend/rag_index.json</code> gespeichert.
+            <strong>Neue Ordnerstruktur:</strong> Original-Dateien in <code>/originals/</code>, Markdown-Dateien in <code>/markdowns/</code>
+            {docs.some(d => d.isExternal) && <span style={{color: 'green'}}> ✅ Externe Speicherung aktiv</span>}
+            {docs.length > 0 && !docs.some(d => d.isExternal) && <span style={{color: 'orange'}}> ⚠️ Interne Speicherung (Projekt-Ordner)</span>}
           </p>
         </div>
 
@@ -199,7 +291,7 @@ const DocsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Dokumente Liste */}
+        {        /* Loading/Error States */}
         {loading && (
           <div className="loading-state"><div className="loading-spinner" />
             <p>Lade Dokumente…</p></div>
@@ -209,26 +301,94 @@ const DocsPage: React.FC = () => {
             <button className="btn btn-primary" onClick={loadDocs}>Erneut versuchen</button>
           </div>
         )}
+
+        {/* 1. Original-Dateien Liste (ZUERST) */}
         {!loading && !error && (
-          <div className="stats-grid">
-            {docs.length === 0 && (
-              <div className="empty-state"><div className="empty-icon">📄</div><h3>Keine Dokumente gefunden</h3><p>Füge Markdown-Dateien unter docs/ hinzu.</p></div>
-            )}
-            {docs.map((d) => (
-              <div key={d.path} className="stat-card">
-                <div className="stat-content">
-                  <h3>{d.path}</h3>
-                  <p>Größe: {Math.round(d.size / 1024)} KB</p>
-                  <p>Aktualisiert: {new Date(d.updatedAt).toLocaleString()}</p>
-                </div>
+          <div style={{ marginTop: 24 }}>
+            <h3>📁 Original-Dateien ({originals.length})</h3>
+            <p style={{ color: '#6b7280', marginBottom: 12 }}>
+              Hochgeladene Original-Dateien - User können diese herunterladen
+            </p>
+            
+            {originals.length === 0 ? (
+              <div className="empty-state" style={{ backgroundColor: '#f0f9ff', border: '1px solid #0ea5e9' }}>
+                <div className="empty-icon">📁</div>
+                <h3>Keine Original-Dateien hochgeladen</h3>
+                <p>Nutzen Sie die blaue "📁 Original-Dateien hochladen" Sektion unten.</p>
               </div>
-            ))}
+            ) : (
+              <div className="stats-grid">
+                {originals.map((file) => (
+                  <div key={file.filename} className="stat-card" style={{ backgroundColor: '#f0f9ff', border: '1px solid #0ea5e9' }}>
+                    <div className="stat-content">
+                      <h3 style={{ color: '#0c4a6e' }}>
+                        📁 {file.originalName}
+                      </h3>
+                      <p>Größe: {Math.round(file.size / 1024)} KB</p>
+                      <p>Hochgeladen: {new Date(file.uploadedAt).toLocaleString()}</p>
+                      <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        <a
+                          href={file.downloadUrl}
+                          className="btn btn-small btn-primary"
+                          style={{ textDecoration: 'none' }}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          💾 Download Original
+                        </a>
+                        <button
+                          className="btn btn-small btn-outline"
+                          onClick={() => deleteOriginalFile(file.filename, file.originalName)}
+                          style={{ color: '#dc2626' }}
+                        >
+                          🗑️ Löschen
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 2. Markdown-Dokumente Liste (ZWEITE Position) */}
+        {!loading && !error && (
+          <div style={{ marginTop: 32 }}>
+            <h3>📝 Markdown-Dokumente (Ordner: markdowns/) ({docs.length})</h3>
+            <p style={{ color: '#6b7280', marginBottom: 12 }}>
+              Für RAG-System indexierte Markdown-Dateien (automatisch generiert + manuell hinzugefügte)
+            </p>
+            
+            {docs.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">📄</div>
+                <h3>Keine Markdown-Dokumente</h3>
+                <p>Laden Sie Original-Dateien hoch oder fügen Sie manuell Markdown hinzu.</p>
+              </div>
+            ) : (
+              <div className="stats-grid">
+                {docs.map((d) => (
+                  <div key={d.path} className="stat-card">
+                    <div className="stat-content">
+                      <h3>
+                        📝 {d.path}
+                        {d.isExternal && <span style={{color: 'green', fontSize: '0.8em', marginLeft: '8px'}}>📁 Extern</span>}
+                        {!d.isExternal && <span style={{color: 'orange', fontSize: '0.8em', marginLeft: '8px'}}>📁 Intern</span>}
+                      </h3>
+                      <p>Größe: {Math.round(d.size / 1024)} KB</p>
+                      <p>Aktualisiert: {new Date(d.updatedAt).toLocaleString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Manuelle Datei hinzufügen */}
         <div className="filters-section" style={{ marginTop: 16 }}>
-          <h3 style={{ marginBottom: 8 }}>Manuelle Markdown-Datei hinzufügen</h3>
+          <h3 style={{ marginBottom: 8 }}>📝 Manuelle Markdown-Datei hinzufügen (Ordner: markdowns/)</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input className="filter-input" placeholder="Titel" value={manualTitle} onChange={e => setManualTitle(e.target.value)} />
             <textarea className="filter-input" placeholder="# Markdown Inhalt" value={manualContent} onChange={e => setManualContent(e.target.value)} rows={6} />
@@ -242,9 +402,52 @@ const DocsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* NEU: Original-Dateien hochladen */}
+        <div className="filters-section" style={{ marginTop: 16, backgroundColor: '#f0f9ff', padding: 16, borderRadius: 8, border: '2px solid #0ea5e9' }}>
+          <h3 style={{ marginBottom: 8, color: '#0c4a6e' }}>📁 Original-Dateien hochladen (NEU)</h3>
+          <p style={{ color: '#075985', marginBottom: 12 }}>
+            <strong>Laden Sie beliebige Dateien hoch!</strong> Das System speichert das Original UND erstellt automatisch Markdown für RAG.
+          </p>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <input
+              type="file"
+              accept="*/*"
+              onChange={(e) => setSelectedOriginalFile(e.target.files?.[0] || null)}
+            />
+            
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="checkbox" checked={manualReindex} onChange={e => setManualReindex(e.target.checked)} />
+              Nach dem Upload Index neu erstellen
+            </label>
+            
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                className="btn btn-success"
+                disabled={originalUploadBusy || !selectedOriginalFile}
+                onClick={uploadOriginalFile}
+              >
+                {originalUploadBusy ? 'Lädt hoch...' : '📁 Original-Datei hochladen'}
+              </button>
+            </div>
+            
+            {selectedOriginalFile && (
+              <div className="page-summary" style={{ backgroundColor: '#e0f2fe', border: '1px solid #0ea5e9' }}>
+                <p><strong>📄 Ausgewählt:</strong> {selectedOriginalFile.name} ({Math.round(selectedOriginalFile.size / 1024)} KB)</p>
+                <p><strong>✅ Wird gespeichert:</strong></p>
+                <ul style={{ margin: '8px 0', paddingLeft: 20 }}>
+                  <li>📁 <strong>Original-Datei</strong> → zum Herunterladen für User</li>
+                  <li>📝 <strong>Markdown-Version</strong> → für RAG-System</li>
+                </ul>
+                <p><strong>📂 Speicherort:</strong> Extern → /originals/ (Original) + /markdowns/ (RAG)</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Bestehende Markdown-Dateien hochladen */}
         <div className="filters-section" style={{ marginTop: 16 }}>
-          <h3 style={{ marginBottom: 8 }}>Bestehende Markdown-Dateien hochladen</h3>
+          <h3 style={{ marginBottom: 8 }}>📝 Markdown-Dateien hochladen (Nur für RAG)</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input
               type="file"
@@ -258,7 +461,7 @@ const DocsPage: React.FC = () => {
             </label>
             <div>
               <button
-                className="btn btn-primary"
+                className="btn btn-secondary"
                 disabled={uploadBusy || selectedFiles.length === 0}
                 onClick={async () => {
                   if (selectedFiles.length === 0) return;
@@ -280,7 +483,7 @@ const DocsPage: React.FC = () => {
                     }
                     setSelectedFiles([]);
                     loadDocs();
-                    alert(`Upload abgeschlossen${manualReindex ? ' und Index neu erstellt.' : '.'}`);
+                    alert(`Upload abgeschlossen${manualReindex ? ' und Index neu erstellt.' : '.'} Dateien wurden extern gespeichert.`);
                   } catch (e: any) {
                     alert(e.message || 'Fehler beim Upload');
                   } finally {
@@ -288,7 +491,7 @@ const DocsPage: React.FC = () => {
                   }
                 }}
               >
-                {uploadBusy ? 'Lade hoch…' : `Hochladen (${selectedFiles.length})`}
+                {uploadBusy ? 'Lade hoch…' : `📝 Markdown hochladen (${selectedFiles.length})`}
               </button>
             </div>
             {selectedFiles.length > 0 && (
