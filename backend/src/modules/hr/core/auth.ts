@@ -12,7 +12,7 @@ export interface User {
 
 export interface Permission {
   action: 'read' | 'write' | 'delete' | 'admin';
-  resource: 'employee_data' | 'reports' | 'onboarding' | 'all';
+  resource: 'employee_data' | 'reports' | 'onboarding' | 'support' | 'tickets' | 'ai' | 'admin_users' | 'system_settings' | 'audit_logs' | 'system_stats' | 'audit_stats' | 'all';
 }
 
 export interface AuthenticatedRequest extends Request {

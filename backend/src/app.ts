@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import { registerHRRoutes } from './modules/hr/orchestrator';
 import { registerSupportRoutes } from './modules/support/orchestrator';
 import { registerAIRoutes } from './modules/ai/orchestrator';
+import { registerAdminRoutes } from './modules/admin/orchestrator';
 import { requireAuth } from './modules/hr/core/auth';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './openapi';
@@ -36,7 +37,7 @@ app.get('/api/health', (req, res) => {
     message: 'CompanyAI Backend ist bereit!', 
     status: 'OK',
     timestamp: new Date().toISOString(),
-    modules: ['hr', 'support', 'ai', 'data']
+    modules: ['hr', 'support', 'ai', 'admin', 'data']
   });
 });
 
@@ -69,6 +70,19 @@ app.get('/api/hello', (req, res) => {
           'POST /api/ai/chat',
           'POST /api/ai/hr-assist',
           'POST /api/ai/rag/reindex'
+        ]
+      },
+      admin: {
+        description: 'System Administration & User Management',
+        endpoints: [
+          'GET /api/admin/users',
+          'POST /api/admin/users',
+          'PUT /api/admin/users/:id',
+          'DELETE /api/admin/users/:id',
+          'GET /api/admin/settings',
+          'POST /api/admin/settings',
+          'GET /api/admin/audit-logs',
+          'GET /api/admin/system-stats'
         ]
       },
       data: {
@@ -117,6 +131,7 @@ apiRouter.use(requireAuth);
 registerHRRoutes(apiRouter);
 registerSupportRoutes(apiRouter);
 registerAIRoutes(apiRouter);
+registerAdminRoutes(apiRouter);
 
 // DataSources API Routes registrieren
 apiRouter.get('/data/users', handleGetUsers);
@@ -145,7 +160,7 @@ app.get('/', (req, res) => {
     message: 'CompanyAI Backend API',
     version: '2.1.0',
     architecture: 'Modulbasiert',
-    modules: ['hr', 'support', 'ai', 'data'],
+    modules: ['hr', 'support', 'ai', 'admin', 'data'],
     documentation: '/api/hello'
   });
 });
