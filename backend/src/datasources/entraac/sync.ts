@@ -1,5 +1,5 @@
-// EntraAC Integration - Synchronization Service
-// Verwaltet die periodische Synchronisation von Entra ID Daten
+// EntraAC Integration - Synchronization Service with SQLite Persistence
+// Verwaltet die periodische Synchronisation von Entra ID Daten mit automatischer Schema-Erkennung
 
 import { graphGet, graphGetAllPages, testConnection } from './client';
 import { setUsers, setDevices, updateSyncStatus, getSyncStatus } from './store';
@@ -9,11 +9,11 @@ let syncInterval: NodeJS.Timeout | null = null;
 let syncInProgress = false;
 
 /**
- * Synchronisiert alle Benutzer von Microsoft Graph
+ * Synchronisiert alle Benutzer von Microsoft Graph mit dynamischer Schema-Erkennung
  */
 export async function syncUsers(): Promise<EntraUser[]> {
   try {
-    console.log('EntraAC: Starting user sync...');
+    console.log('🔄 EntraAC: Starting user sync with dynamic schema detection...');
     
     // Vereinfachter Feldsatz für robuste Synchronisation
     const selectFields = [
@@ -25,7 +25,7 @@ export async function syncUsers(): Promise<EntraUser[]> {
       'jobTitle',
       'accountEnabled',
       'createdDateTime',
-      'lastSignInDateTime',
+      // 'lastSignInDateTime', // Nicht verfügbar in Entra Daten
       // zusätzliche, gewöhnlich verfügbare Felder
       'givenName',
       'surname',
@@ -43,76 +43,60 @@ export async function syncUsers(): Promise<EntraUser[]> {
     const path = `/v1.0/users?$select=${selectFields}&$top=999&$filter=userType eq 'Member'`;
     const rawUsers = await graphGetAllPages<any>(path);
 
-    const users: EntraUser[] = rawUsers.map((user: any) => ({
-      id: user.id,
-      displayName: user.displayName || '',
-      userPrincipalName: user.userPrincipalName,
-      mail: user.mail,
-      department: user.department,
-      jobTitle: user.jobTitle,
-      accountEnabled: user.accountEnabled,
-      createdDateTime: user.createdDateTime,
-      lastSignInDateTime: user.lastSignInDateTime,
-      
-      // Persönliche Informationen (Basis)
-      givenName: user.givenName,
-      surname: user.surname,
-      officeLocation: user.officeLocation,
-      mobilePhone: user.mobilePhone,
-      businessPhones: user.businessPhones,
-      
-      // Organisatorische Informationen (Basis)
-      companyName: user.companyName,
-      employeeId: user.employeeId,
-      employeeType: undefined,
-      costCenter: undefined,
-      division: undefined,
-      manager: undefined,
-      
-      // Technische/Account-Informationen (Basis)
-      signInSessionsValidFromDateTime: undefined,
-      passwordPolicies: undefined,
-      usageLocation: user.usageLocation,
-      preferredLanguage: user.preferredLanguage,
-      aboutMe: undefined,
-      
-      // Lizenzen & Apps (deaktiviert für Robustheit)
-      assignedLicenses: undefined,
-      assignedPlans: undefined,
-      
-      // Sicherheit & Sync (Basis)
-      userType: user.userType,
-      onPremisesSecurityIdentifier: undefined,
-      onPremisesSyncEnabled: undefined,
-      onPremisesDistinguishedName: undefined,
-      onPremisesDomainName: undefined,
-      onPremisesSamAccountName: undefined,
+    console.log(`📥 EntraAC: Fetched ${rawUsers.length} users from Graph API`);
 
-      // Adresse (deaktiviert für Robustheit)
-      streetAddress: undefined,
-      city: undefined,
-      state: undefined,
-      country: undefined,
-      postalCode: undefined,
-      faxNumber: undefined,
-    }));
+    const users: EntraUser[] = rawUsers.map((user: any) => {
+      // Nur definierte Werte verwenden für robustes SQLite-Schema
+      const userData: any = {
+        id: user.id,
+        displayName: user.displayName || '',
+        source: 'entra' as const
+      };
 
-    setUsers(users);
-    console.log(`EntraAC: Successfully synced ${users.length} users`);
+      // Füge nur definierte/verfügbare Werte hinzu
+      if (user.userPrincipalName) userData.userPrincipalName = user.userPrincipalName;
+      if (user.mail) userData.mail = user.mail;
+      if (user.department) userData.department = user.department;
+      if (user.jobTitle) userData.jobTitle = user.jobTitle;
+      if (user.accountEnabled !== undefined) userData.accountEnabled = user.accountEnabled;
+      if (user.createdDateTime) userData.createdDateTime = user.createdDateTime;
+      
+      // Persönliche Informationen (nur wenn vorhanden)
+      if (user.givenName) userData.givenName = user.givenName;
+      if (user.surname) userData.surname = user.surname;
+      if (user.officeLocation) userData.officeLocation = user.officeLocation;
+      if (user.mobilePhone) userData.mobilePhone = user.mobilePhone;
+      if (user.businessPhones && user.businessPhones.length > 0) userData.businessPhones = user.businessPhones;
+      
+      // Organisatorische Informationen (nur wenn vorhanden)
+      if (user.companyName) userData.companyName = user.companyName;
+      if (user.employeeId) userData.employeeId = user.employeeId;
+      
+      // Technische/Account-Informationen (nur wenn vorhanden)
+      if (user.usageLocation) userData.usageLocation = user.usageLocation;
+      if (user.preferredLanguage) userData.preferredLanguage = user.preferredLanguage;
+      if (user.userType) userData.userType = user.userType;
+
+      return userData;
+    });
+
+    // Async storage mit Schema-Detection
+    await setUsers(users);
+    console.log(`✅ EntraAC: Successfully synced ${users.length} users to SQLite database`);
     return users;
 
   } catch (error) {
-    console.error('EntraAC: User sync failed:', error);
+    console.error('❌ EntraAC: User sync failed:', error);
     throw new Error(`User sync failed: ${error}`);
   }
 }
 
 /**
- * Synchronisiert alle Geräte von Microsoft Graph
+ * Synchronisiert alle Geräte von Microsoft Graph mit dynamischer Schema-Erkennung
  */
 export async function syncDevices(): Promise<EntraDevice[]> {
   try {
-    console.log('EntraAC: Starting device sync...');
+    console.log('🔄 EntraAC: Starting device sync with dynamic schema detection...');
     
     const selectFields = [
       'id',
@@ -128,6 +112,8 @@ export async function syncDevices(): Promise<EntraDevice[]> {
     const path = `/v1.0/devices?$select=${selectFields}&$top=999`;
     const rawDevices = await graphGetAllPages<any>(path);
 
+    console.log(`📥 EntraAC: Fetched ${rawDevices.length} devices from Graph API`);
+
     const devices: EntraDevice[] = rawDevices.map((device: any) => ({
       id: device.id,
       displayName: device.displayName || '',
@@ -139,22 +125,23 @@ export async function syncDevices(): Promise<EntraDevice[]> {
       registrationDateTime: device.registrationDateTime
     }));
 
-    setDevices(devices);
-    console.log(`EntraAC: Successfully synced ${devices.length} devices`);
+    // Async storage mit Schema-Detection
+    await setDevices(devices);
+    console.log(`✅ EntraAC: Successfully synced ${devices.length} devices to SQLite database`);
     return devices;
 
   } catch (error) {
-    console.error('EntraAC: Device sync failed:', error);
+    console.error('❌ EntraAC: Device sync failed:', error);
     throw new Error(`Device sync failed: ${error}`);
   }
 }
 
 /**
- * Führt eine vollständige Synchronisation durch
+ * Führt eine vollständige Synchronisation durch mit SQLite Persistence
  */
 export async function syncAll(): Promise<void> {
   if (syncInProgress) {
-    console.log('EntraAC: Sync already in progress, skipping...');
+    console.log('⚠️ EntraAC: Sync already in progress, skipping...');
     return;
   }
 
@@ -162,7 +149,7 @@ export async function syncAll(): Promise<void> {
   const startTime = Date.now();
 
   try {
-    console.log('EntraAC: Starting full sync...');
+    console.log('🚀 EntraAC: Starting full sync with SQLite persistence...');
     
     // Verbindung testen
     const connectionOk = await testConnection();
@@ -176,22 +163,27 @@ export async function syncAll(): Promise<void> {
       syncDevices()
     ]);
 
-    updateSyncStatus({
+    const duration = Date.now() - startTime;
+
+    // Status in Datenbank speichern
+    await updateSyncStatus({
       usersCount: users.length,
       devicesCount: devices.length,
       success: true,
-      error: undefined
+      error: undefined,
+      duration_ms: duration
     });
 
-    const duration = Date.now() - startTime;
-    console.log(`EntraAC: Full sync completed in ${duration}ms (${users.length} users, ${devices.length} devices)`);
+    console.log(`🎉 EntraAC: Full sync completed in ${duration}ms`);
+    console.log(`📊 EntraAC: Synced ${users.length} users and ${devices.length} devices to SQLite`);
 
   } catch (error) {
-    console.error('EntraAC: Full sync failed:', error);
+    console.error('❌ EntraAC: Full sync failed:', error);
     
-    updateSyncStatus({
+    await updateSyncStatus({
       success: false,
-      error: String(error)
+      error: String(error),
+      duration_ms: Date.now() - startTime
     });
 
     throw error;
@@ -212,27 +204,27 @@ export function startEntraSync(): void {
   );
 
   if (!enabled) {
-    console.log('EntraAC: Sync disabled (ENTRA_SYNC_ENABLED=false)');
+    console.log('⚠️ EntraAC: Sync disabled (ENTRA_SYNC_ENABLED=false)');
     return;
   }
 
   if (!hasCredentials) {
-    console.log('EntraAC: Sync disabled - missing Azure credentials in .env');
-    console.log('Required: AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET');
+    console.log('⚠️ EntraAC: Sync disabled - missing Azure credentials in .env');
+    console.log('   Required: AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET');
     return;
   }
 
   const intervalMs = Number(process.env.ENTRA_SYNC_INTERVAL_MS || 3600000); // Default: 1 hour
   
-  console.log(`EntraAC: Starting auto-sync with ${intervalMs}ms interval`);
+  console.log(`🔄 EntraAC: Starting auto-sync with ${intervalMs}ms interval (SQLite persistence enabled)`);
 
   // Initial sync
   (async () => {
     try {
       await syncAll();
-      console.log('EntraAC: Initial sync completed successfully');
+      console.log('✅ EntraAC: Initial sync completed successfully');
     } catch (error) {
-      console.error('EntraAC: Initial sync failed:', error);
+      console.error('❌ EntraAC: Initial sync failed:', error);
     }
   })();
 
@@ -244,13 +236,13 @@ export function startEntraSync(): void {
   syncInterval = setInterval(async () => {
     try {
       await syncAll();
-      console.log('EntraAC: Periodic sync completed successfully');
+      console.log('✅ EntraAC: Periodic sync completed successfully');
     } catch (error) {
-      console.error('EntraAC: Periodic sync failed:', error);
+      console.error('❌ EntraAC: Periodic sync failed:', error);
     }
   }, intervalMs);
 
-  console.log('EntraAC: Auto-sync started');
+  console.log('🚀 EntraAC: Auto-sync started with SQLite persistence');
 }
 
 /**
@@ -260,7 +252,7 @@ export function stopEntraSync(): void {
   if (syncInterval) {
     clearInterval(syncInterval);
     syncInterval = null;
-    console.log('EntraAC: Auto-sync stopped');
+    console.log('⏹️ EntraAC: Auto-sync stopped');
   }
 }
 
@@ -274,7 +266,7 @@ export async function manualSync(): Promise<{ success: boolean; message: string;
     
     return {
       success: true,
-      message: `Sync completed: ${status.usersCount} users, ${status.devicesCount} devices`,
+      message: `Sync completed: ${status.usersCount} users, ${status.devicesCount} devices (persisted to SQLite)`,
       data: status
     };
   } catch (error) {

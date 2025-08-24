@@ -2,10 +2,14 @@
 // Steuert die Abläufe im HR-Modul und koordiniert die verschiedenen Funktionen
 
 import { Request, Response } from 'express';
+import multer from 'multer';
 import { 
   CreateOnboardingPlanRequest,
   FetchEmployeeDataRequest,
   CreateHRReportRequest,
+  CreateFieldSchemaRequest,
+  UpdateFieldSchemaRequest,
+  UpdateUserFieldValuesRequest,
   APIResponse 
 } from './types';
 
@@ -13,9 +17,48 @@ import {
 import { generateOnboardingPlan, updateOnboardingTask, validateOnboardingRequest } from './functions/generateOnboardingPlan';
 import { fetchEmployeeData, fetchEmployeeById, createEmployee, updateEmployee, getEmployeeStats } from './functions/fetchEmployeeData';
 import { createHRReport, createDetailedHRReport } from './functions/createHRReport';
+import { 
+  getEmployeeDocuments, 
+  downloadEmployeeDocument, 
+  deleteEmployeeDocument, 
+  uploadEmployeeDocument,
+  getHRStorageStats,
+  initializeAllUserDirectories,
+  updateEmployeeDetailsFile
+} from './functions/manageDocuments';
+import {
+  getAllFieldSchemas,
+  createFieldSchema,
+  updateFieldSchema,
+  deleteFieldSchema,
+  getFieldSchemaCategories
+} from './functions/manageFieldSchemas';
+import {
+  getEmployeeAdditionalInfo,
+  updateEmployeeAdditionalInfo,
+  getAdditionalInfoStats
+} from './functions/manageUserValues';
 
 // Import core functionality
 import { AuthenticatedRequest, requirePermission, logAuthEvent } from './core/auth';
+
+// Multer Configuration für HR-Dokumente
+const hrDocumentUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['pdf', 'doc', 'docx', 'xlsx', 'xls', 'jpg', 'jpeg', 'png', 'txt'];
+    const fileType = file.originalname.split('.').pop()?.toLowerCase() || '';
+    
+    if (allowedTypes.includes(fileType)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Dateityp .${fileType} nicht erlaubt. Erlaubt: ${allowedTypes.join(', ')}`));
+    }
+  }
+});
 
 /**
  * HR-Orchestrator Klasse - Koordiniert alle HR-Module-Funktionen
@@ -352,6 +395,478 @@ export class HROrchestrator {
       });
     }
   }
+
+  // ===== DOCUMENT MANAGEMENT HANDLERS =====
+
+  /**
+   * Lädt alle Dokumente eines Mitarbeiters
+   */
+  static async handleGetEmployeeDocuments(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { employeeId } = req.params;
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'read', 'hr_documents');
+
+      const result = await getEmployeeDocuments(employeeId);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(404).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Laden der Mitarbeiter-Dokumente:', error);
+      res.status(500).json({
+        success: false,
+        error: 'DocumentsLoadError',
+        message: 'Dokumente konnten nicht geladen werden'
+      });
+    }
+  }
+
+  /**
+   * Lädt Dokument für Download
+   */
+  static async handleDownloadEmployeeDocument(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { employeeId, documentId } = req.params;
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'download', 'hr_documents');
+
+      const result = await downloadEmployeeDocument(employeeId, documentId);
+
+      if (result.success && result.data) {
+        // Content-Type basierend auf Dateiendung setzen
+        const documentsResult = await getEmployeeDocuments(employeeId);
+        const document = documentsResult.data?.find(d => d.id === documentId);
+        
+        if (document) {
+          const contentType = getContentType(document.fileType);
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Disposition', `attachment; filename="${document.fileName}"`);
+          res.send(result.data);
+        } else {
+          res.status(404).json({
+            success: false,
+            error: 'DocumentNotFound',
+            message: 'Dokument nicht gefunden'
+          });
+        }
+      } else {
+        res.status(404).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Download:', error);
+      res.status(500).json({
+        success: false,
+        error: 'DocumentDownloadError',
+        message: 'Download fehlgeschlagen'
+      });
+    }
+  }
+
+  /**
+   * Lädt Dokument hoch (mit Multer für File-Upload)
+   */
+  static async handleUploadEmployeeDocument(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { employeeId } = req.params;
+      const { category } = req.body;
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'upload', 'hr_documents');
+
+      // File aus req.file holen (Multer)
+      const file = req.file as any;
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          error: 'NoFileProvided',
+          message: 'Keine Datei bereitgestellt'
+        });
+      }
+
+      const uploadRequest = {
+        employeeId: employeeId,
+        fileName: file.originalname,
+        category: category || 'Sonstiges',
+        fileBuffer: file.buffer
+      };
+
+      const result = await uploadEmployeeDocument(uploadRequest);
+
+      if (result.success) {
+        res.status(201).json(result);
+      } else {
+        res.status(400).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Upload:', error);
+      res.status(500).json({
+        success: false,
+        error: 'DocumentUploadError',
+        message: 'Upload fehlgeschlagen'
+      });
+    }
+  }
+
+  /**
+   * Löscht Dokument
+   */
+  static async handleDeleteEmployeeDocument(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { employeeId, documentId } = req.params;
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'delete', 'hr_documents');
+
+      const result = await deleteEmployeeDocument(employeeId, documentId);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(404).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Löschen:', error);
+      res.status(500).json({
+        success: false,
+        error: 'DocumentDeleteError',
+        message: 'Dokument konnte nicht gelöscht werden'
+      });
+    }
+  }
+
+  /**
+   * Lädt HR-Speicher-Statistiken
+   */
+  static async handleGetHRStorageStats(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+      logAuthEvent(userId, 'read', 'hr_storage_stats');
+
+      const result = await getHRStorageStats();
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(500).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler bei Speicher-Statistiken:', error);
+      res.status(500).json({
+        success: false,
+        error: 'StorageStatsError',
+        message: 'Speicher-Statistiken konnten nicht geladen werden'
+      });
+    }
+  }
+
+  /**
+   * Initialisiert automatisch Ordnerstruktur für alle Users
+   */
+  static async handleInitializeUserDirectories(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+      
+      logAuthEvent(userId, 'admin', 'hr_documents');
+      
+      const result = await initializeAllUserDirectories();
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(500).json(result);
+      }
+      
+    } catch (error) {
+      console.error('❌ Fehler bei der User-Directory-Initialisierung:', error);
+      res.status(500).json({
+        success: false,
+        error: 'InitializationError',
+        message: 'User-Directories konnten nicht initialisiert werden'
+      });
+    }
+  }
+
+  // ===== FIELD SCHEMAS HANDLERS (GLOBAL) =====
+
+  /**
+   * Lädt alle Field Schemas (für Schema-Management)
+   */
+  static async handleGetFieldSchemas(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'read', 'hr_field_schemas');
+
+      const result = await getAllFieldSchemas();
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(500).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Laden der Field Schemas:', error);
+      res.status(500).json({
+        success: false,
+        error: 'SchemasLoadError',
+        message: 'Field Schemas konnten nicht geladen werden'
+      });
+    }
+  }
+
+  /**
+   * Erstellt ein neues Field Schema
+   */
+  static async handleCreateFieldSchema(req: AuthenticatedRequest, res: Response) {
+    try {
+      const request: CreateFieldSchemaRequest = req.body;
+      const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown';
+
+      logAuthEvent(userId, 'create', 'hr_field_schemas');
+
+      const result = await createFieldSchema(request, userEmail);
+
+      if (result.success) {
+        res.status(201).json(result);
+      } else {
+        const statusCode = result.error === 'ValidationError' ? 400 : 
+                          result.error === 'DuplicateSchemaError' ? 409 : 500;
+        res.status(statusCode).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Erstellen des Field Schemas:', error);
+      res.status(500).json({
+        success: false,
+        error: 'InternalServerError',
+        message: 'Field Schema konnte nicht erstellt werden'
+      });
+    }
+  }
+
+  /**
+   * Aktualisiert ein bestehendes Field Schema
+   */
+  static async handleUpdateFieldSchema(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { schemaId } = req.params;
+      const request: UpdateFieldSchemaRequest = req.body;
+      const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown';
+
+      logAuthEvent(userId, 'update', 'hr_field_schemas');
+
+      const result = await updateFieldSchema(schemaId, request, userEmail);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        const statusCode = result.error === 'NotFoundError' ? 404 : 500;
+        res.status(statusCode).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Aktualisieren des Field Schemas:', error);
+      res.status(500).json({
+        success: false,
+        error: 'InternalServerError',
+        message: 'Field Schema konnte nicht aktualisiert werden'
+      });
+    }
+  }
+
+  /**
+   * Löscht ein Field Schema (und alle User Values)
+   */
+  static async handleDeleteFieldSchema(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { schemaId } = req.params;
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'delete', 'hr_field_schemas');
+
+      const result = await deleteFieldSchema(schemaId);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        const statusCode = result.error === 'NotFoundError' ? 404 : 500;
+        res.status(statusCode).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Löschen des Field Schemas:', error);
+      res.status(500).json({
+        success: false,
+        error: 'InternalServerError',
+        message: 'Field Schema konnte nicht gelöscht werden'
+      });
+    }
+  }
+
+  /**
+   * Lädt verfügbare Schema-Kategorien
+   */
+  static async handleGetFieldSchemaCategories(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'read', 'hr_field_schemas');
+
+      const result = await getFieldSchemaCategories();
+      res.json(result);
+
+    } catch (error) {
+      console.error('❌ Fehler beim Laden der Kategorien:', error);
+      res.status(500).json({
+        success: false,
+        error: 'InternalServerError',
+        message: 'Kategorien konnten nicht geladen werden'
+      });
+    }
+  }
+
+  // ===== USER FIELD VALUES HANDLERS (USER-SPECIFIC) =====
+
+  /**
+   * Lädt Zusatzinformationen für einen Mitarbeiter
+   */
+  static async handleGetEmployeeAdditionalInfo(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { employeeId } = req.params;
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'read', 'hr_additional_info');
+
+      const result = await getEmployeeAdditionalInfo(employeeId);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(404).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Laden der Zusatzinformationen:', error);
+      res.status(500).json({
+        success: false,
+        error: 'AdditionalInfoLoadError',
+        message: 'Zusatzinformationen konnten nicht geladen werden'
+      });
+    }
+  }
+
+  /**
+   * Aktualisiert Zusatzinformationen für einen Mitarbeiter
+   */
+  static async handleUpdateEmployeeAdditionalInfo(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { employeeId } = req.params;
+      const request: UpdateUserFieldValuesRequest = req.body;
+      const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown';
+
+      logAuthEvent(userId, 'update', 'hr_additional_info');
+
+      const result = await updateEmployeeAdditionalInfo(employeeId, request, userEmail);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        const statusCode = result.error === 'ValidationError' ? 400 : 500;
+        res.status(statusCode).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Aktualisieren der Zusatzinformationen:', error);
+      res.status(500).json({
+        success: false,
+        error: 'InternalServerError',
+        message: 'Zusatzinformationen konnten nicht aktualisiert werden'
+      });
+    }
+  }
+
+  /**
+   * Lädt Statistiken über Zusatzinformationen
+   */
+  static async handleGetAdditionalInfoStats(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'read', 'hr_additional_info');
+
+      const result = await getAdditionalInfoStats();
+      res.json(result);
+
+    } catch (error) {
+      console.error('❌ Fehler beim Laden der Zusatzinformationen-Statistiken:', error);
+      res.status(500).json({
+        success: false,
+        error: 'InternalServerError',
+        message: 'Statistiken konnten nicht geladen werden'
+      });
+    }
+  }
+
+  /**
+   * Aktualisiert die user_details.txt Datei für einen Mitarbeiter
+   */
+  static async handleUpdateEmployeeDetailsFile(req: AuthenticatedRequest, res: Response) {
+    try {
+      const { employeeId } = req.params;
+      const userId = req.user?.id || 'unknown';
+
+      logAuthEvent(userId, 'update', 'hr_details_file');
+
+      const result = await updateEmployeeDetailsFile(employeeId);
+
+      if (result.success) {
+        res.json(result);
+      } else {
+        const statusCode = result.error === 'UserNotFound' ? 404 : 500;
+        res.status(statusCode).json(result);
+      }
+
+    } catch (error) {
+      console.error('❌ Fehler beim Aktualisieren der Details-Datei:', error);
+      res.status(500).json({
+        success: false,
+        error: 'InternalServerError',
+        message: 'Details-Datei konnte nicht aktualisiert werden'
+      });
+    }
+  }
+}
+
+/**
+ * Helper: Content-Type für Dateitypen
+ */
+function getContentType(fileType: string): string {
+  const types: Record<string, string> = {
+    'pdf': 'application/pdf',
+    'doc': 'application/msword',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'xls': 'application/vnd.ms-excel',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'txt': 'text/plain'
+  };
+  return types[fileType.toLowerCase()] || 'application/octet-stream';
 }
 
 /**
@@ -411,5 +926,88 @@ export function registerHRRoutes(router: any) {
   router.post('/hr/test-data',
     requirePermission('admin', 'all'),
     HROrchestrator.handleGenerateTestData
+  );
+
+  // ===== DOCUMENT MANAGEMENT ROUTES =====
+  router.get('/hr/employees/:employeeId/documents',
+    requirePermission('read', 'hr_documents'),
+    HROrchestrator.handleGetEmployeeDocuments
+  );
+  
+  router.get('/hr/employees/:employeeId/documents/:documentId',
+    requirePermission('read', 'hr_documents'),
+    HROrchestrator.handleDownloadEmployeeDocument
+  );
+  
+  // Upload route mit Multer middleware
+  router.post('/hr/employees/:employeeId/documents/upload',
+    requirePermission('write', 'hr_documents'),
+    hrDocumentUpload.single('document'),
+    HROrchestrator.handleUploadEmployeeDocument
+  );
+  
+  router.delete('/hr/employees/:employeeId/documents/:documentId',
+    requirePermission('delete', 'hr_documents'),
+    HROrchestrator.handleDeleteEmployeeDocument
+  );
+
+  // Storage Statistics
+  router.get('/hr/storage/stats',
+    requirePermission('read', 'hr_storage_stats'),
+    HROrchestrator.handleGetHRStorageStats
+  );
+
+  // User Directory Initialization (automatisch)
+  router.post('/hr/directories/initialize',
+    requirePermission('admin', 'hr_documents'),
+    HROrchestrator.handleInitializeUserDirectories
+  );
+
+  // ===== FIELD SCHEMAS ROUTES (GLOBAL SCHEMA MANAGEMENT) =====
+  router.get('/hr/field-schemas',
+    requirePermission('read', 'employee_data'),
+    HROrchestrator.handleGetFieldSchemas
+  );
+
+  router.post('/hr/field-schemas',
+    requirePermission('admin', 'employee_data'),
+    HROrchestrator.handleCreateFieldSchema
+  );
+
+  router.put('/hr/field-schemas/:schemaId',
+    requirePermission('admin', 'employee_data'),
+    HROrchestrator.handleUpdateFieldSchema
+  );
+
+  router.delete('/hr/field-schemas/:schemaId',
+    requirePermission('admin', 'employee_data'),
+    HROrchestrator.handleDeleteFieldSchema
+  );
+
+  router.get('/hr/field-schemas/categories',
+    requirePermission('read', 'employee_data'),
+    HROrchestrator.handleGetFieldSchemaCategories
+  );
+
+  // ===== USER ADDITIONAL INFO ROUTES (USER-SPECIFIC VALUES) =====
+  router.get('/hr/employees/:employeeId/additional-info',
+    requirePermission('read', 'employee_data'),
+    HROrchestrator.handleGetEmployeeAdditionalInfo
+  );
+
+  router.put('/hr/employees/:employeeId/additional-info',
+    requirePermission('write', 'employee_data'),
+    HROrchestrator.handleUpdateEmployeeAdditionalInfo
+  );
+
+  router.get('/hr/additional-info/stats',
+    requirePermission('read', 'reports'),
+    HROrchestrator.handleGetAdditionalInfoStats
+  );
+
+  // ===== USER DETAILS FILE MANAGEMENT =====
+  router.put('/hr/employees/:employeeId/details-file',
+    requirePermission('write', 'employee_data'),
+    HROrchestrator.handleUpdateEmployeeDetailsFile
   );
 }

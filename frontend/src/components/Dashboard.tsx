@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { openApiDocs, navigateToRoute } from '../utils/browserUtils';
 import './Dashboard.css';
 
 interface ModuleStatus {
@@ -11,23 +12,10 @@ interface ModuleStatus {
 
 const Dashboard: React.FC = () => {
   const [modules, setModules] = useState<ModuleStatus[]>([]);
-  const [systemStatus, setSystemStatus] = useState<any>(null);
 
   useEffect(() => {
-    // Lade System-Status
-    fetchSystemStatus();
     fetchModuleStatus();
   }, []);
-
-  const fetchSystemStatus = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/health');
-      const data = await response.json();
-      setSystemStatus(data);
-    } catch (error) {
-      console.error('Fehler beim Laden des System-Status:', error);
-    }
-  };
 
   const fetchModuleStatus = () => {
     const moduleData: ModuleStatus[] = [
@@ -53,6 +41,13 @@ const Dashboard: React.FC = () => {
         lastUpdate: '8. Dezember 2024'
       },
       {
+        name: 'Admin-Portal',
+        status: 'active',
+        description: 'Multi-Source User-Integration (Entra, LDAP, Upload, Manual)',
+        endpoints: 48,
+        lastUpdate: '14. Dezember 2024'
+      },
+      {
         name: 'Produktion Module',
         status: 'planned',
         description: 'Fertigungsprozesse und Qualitätskontrolle - Geplant',
@@ -70,49 +65,7 @@ const Dashboard: React.FC = () => {
         <p>Modulbasierte Unternehmens-KI - System-Übersicht</p>
       </div>
 
-      {/* System Status */}
-      <div className="dashboard-section">
-        <h2>System Status</h2>
-        <div className="status-grid">
-          <div className="status-card">
-            <div className="status-icon">🚀</div>
-            <div className="status-info">
-              <h3>Backend</h3>
-              <p className={`status-text ${systemStatus?.status === 'OK' ? 'active' : 'inactive'}`}>
-                {systemStatus?.status === 'OK' ? 'Online' : 'Offline'}
-              </p>
-              <small>Port 5000</small>
-            </div>
-          </div>
-          
-          <div className="status-card">
-            <div className="status-icon">🎨</div>
-            <div className="status-info">
-              <h3>Frontend</h3>
-              <p className="status-text active">Online</p>
-              <small>Port 5173</small>
-            </div>
-          </div>
-          
-          <div className="status-card">
-            <div className="status-icon">🔐</div>
-            <div className="status-info">
-              <h3>Authentifizierung</h3>
-              <p className="status-text active">Aktiv</p>
-              <small>Token-basiert</small>
-            </div>
-          </div>
-          
-          <div className="status-card">
-            <div className="status-icon">📊</div>
-            <div className="status-info">
-              <h3>API-Endpunkte</h3>
-              <p className="status-text active">11 Aktiv</p>
-              <small>HR: 8, Support: 3</small>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Module Overview */}
       <div className="dashboard-section">
@@ -125,6 +78,7 @@ const Dashboard: React.FC = () => {
                   {module.name.includes('HR') && '👥'}
                   {module.name.includes('Support') && '🎫'}
                   {module.name.includes('AI') && '🤖'}
+                  {module.name.includes('Admin-Portal') && '🏢'}
                   {module.name.includes('Produktion') && '🏭'}
                 </div>
                 <div className="module-status-badge">
@@ -153,7 +107,13 @@ const Dashboard: React.FC = () => {
                 <div className="module-actions">
                   <button 
                     className="action-btn primary"
-                    onClick={() => window.location.href = `/${module.name.toLowerCase().split(' ')[0]}`}
+                    onClick={() => {
+                      if (module.name === 'Admin-Portal') {
+                        navigateToRoute('/admin-portal');
+                      } else {
+                        navigateToRoute(`/${module.name.toLowerCase().split(' ')[0]}`);
+                      }
+                    }}
                   >
                     Modul öffnen
                   </button>
@@ -170,7 +130,7 @@ const Dashboard: React.FC = () => {
         <div className="quick-actions">
           <button 
             className="quick-action-btn hr"
-            onClick={() => window.location.href = '/hr/employees'}
+            onClick={() => navigateToRoute('/hr/employees')}
           >
             <div className="quick-icon">👤</div>
             <span>Mitarbeiter verwalten</span>
@@ -178,7 +138,7 @@ const Dashboard: React.FC = () => {
           
           <button 
             className="quick-action-btn support"
-            onClick={() => window.location.href = '/support/tickets'}
+            onClick={() => navigateToRoute('/support/tickets')}
           >
             <div className="quick-icon">📋</div>
             <span>Support Tickets</span>
@@ -186,15 +146,23 @@ const Dashboard: React.FC = () => {
           
           <button 
             className="quick-action-btn hr"
-            onClick={() => window.location.href = '/hr/reports'}
+            onClick={() => navigateToRoute('/hr/reports')}
           >
             <div className="quick-icon">📈</div>
             <span>HR Berichte</span>
           </button>
           
           <button 
+            className="quick-action-btn admin"
+            onClick={() => navigateToRoute('/admin-portal/dashboard')}
+          >
+            <div className="quick-icon">🏢</div>
+            <span>Admin-Portal</span>
+          </button>
+          
+          <button 
             className="quick-action-btn general"
-            onClick={() => window.open('http://localhost:5000/api/hello', '_blank')}
+            onClick={openApiDocs}
           >
             <div className="quick-icon">📚</div>
             <span>API Dokumentation</span>

@@ -10,6 +10,8 @@ import { registerHRRoutes } from './modules/hr/orchestrator';
 import { registerSupportRoutes } from './modules/support/orchestrator';
 import { registerAIRoutes } from './modules/ai/orchestrator';
 import { registerAdminRoutes } from './modules/admin/orchestrator';
+import { registerAdminPortalRoutes, AdminPortalOrchestrator } from './modules/admin-portal/orchestrator';
+import { registerAuthRoutes } from './modules/auth/orchestrator';
 import { requireAuth } from './modules/hr/core/auth';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './openapi';
@@ -37,7 +39,7 @@ app.get('/api/health', (req, res) => {
     message: 'CompanyAI Backend ist bereit!', 
     status: 'OK',
     timestamp: new Date().toISOString(),
-    modules: ['hr', 'support', 'ai', 'admin', 'data']
+    modules: ['hr', 'support', 'ai', 'admin', 'admin-portal', 'auth', 'data']
   });
 });
 
@@ -85,6 +87,29 @@ app.get('/api/hello', (req, res) => {
           'GET /api/admin/system-stats'
         ]
       },
+      'admin-portal': {
+        description: 'Multi-Source User Integration (Entra, LDAP, Upload, Manual)',
+        endpoints: [
+          'POST /api/admin-portal/sync/:source',
+          'GET /api/admin-portal/users',
+          'POST /api/admin-portal/upload/process',
+          'POST /api/admin-portal/manual/users',
+          'GET /api/admin-portal/dashboard/stats',
+          'GET /api/admin-portal/conflicts'
+        ]
+      },
+      auth: {
+        description: 'Multi-Provider Authentication (Admin, Manual, Entra, LDAP)',
+        endpoints: [
+          'POST /api/auth/admin-token',
+          'POST /api/auth/manual-login',
+          'POST /api/auth/entra-login',
+          'POST /api/auth/ldap-login',
+          'GET /api/auth/entra/callback',
+          'GET /api/auth/providers',
+          'GET /api/auth/test-tokens'
+        ]
+      },
       data: {
         description: 'DataSources Integration (Entra ID, Manual, CSV, etc.)',
         endpoints: [
@@ -124,6 +149,9 @@ app.get('/api/auth/info', (_req, res) => {
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/api/openapi.json', (_req, res) => res.json(swaggerSpec));
 
+// Auth Routes (OHNE requireAuth - da sie für Login verwendet werden)
+registerAuthRoutes(apiRouter);
+
 // Authentifizierung für alle API-Routes (außer Public Routes)
 apiRouter.use(requireAuth);
 
@@ -132,6 +160,7 @@ registerHRRoutes(apiRouter);
 registerSupportRoutes(apiRouter);
 registerAIRoutes(apiRouter);
 registerAdminRoutes(apiRouter);
+registerAdminPortalRoutes(apiRouter);
 
 // DataSources API Routes registrieren
 apiRouter.get('/data/users', handleGetUsers);
@@ -154,13 +183,18 @@ app.use('/api', apiRouter);
 seedManualUsersIfEmpty();
 startDataSourceSync();
 
+// Admin-Portal initialisieren
+AdminPortalOrchestrator.initialize().catch(error => {
+  console.error('❌ Admin-Portal Initialisierung fehlgeschlagen:', error);
+});
+
 // Default route
 app.get('/', (req, res) => {
   res.json({ 
     message: 'CompanyAI Backend API',
     version: '2.1.0',
     architecture: 'Modulbasiert',
-    modules: ['hr', 'support', 'ai', 'admin', 'data'],
+    modules: ['hr', 'support', 'ai', 'admin', 'admin-portal', 'auth', 'data'],
     documentation: '/api/hello'
   });
 });

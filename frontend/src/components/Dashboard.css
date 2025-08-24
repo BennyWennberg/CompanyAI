@@ -99,11 +99,33 @@
   font-size: 0.8rem;
 }
 
-/* Modules Grid */
+/* Modules Grid - Maximal 4 Module pro Reihe */
 .modules-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  max-width: 100%;
   gap: 24px;
+}
+
+/* Bei breiten Bildschirmen: Maximal 4 Spalten */
+@media (min-width: 1400px) {
+  .modules-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Bei mittleren Bildschirmen: 3 Spalten */
+@media (min-width: 1024px) and (max-width: 1399px) {
+  .modules-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Bei kleineren Bildschirmen: 2 Spalten */  
+@media (min-width: 768px) and (max-width: 1023px) {
+  .modules-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .module-card {

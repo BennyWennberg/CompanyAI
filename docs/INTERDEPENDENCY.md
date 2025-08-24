@@ -23,10 +23,33 @@ backend/src/
 │   │   ├── core/
 │   │   │   └── auth.ts      # SHARED: Authentifizierung-Middleware
 │   │   └── functions/       # Geschäftslogik-Funktionen
-│   └── support/             # Support-Modul (vollständig implementiert)
-│       ├── orchestrator.ts  # Route-Handler + API-Endpunkte
-│       ├── types.ts         # TypeScript-Interfaces
-│       └── functions/       # Geschäftslogik-Funktionen
+│   ├── support/             # Support-Modul (vollständig implementiert)
+│   │   ├── orchestrator.ts  # Route-Handler + API-Endpunkte
+│   │   ├── types.ts         # TypeScript-Interfaces
+│   │   └── functions/       # Geschäftslogik-Funktionen
+│   ├── ai/                  # AI-Modul (vollständig implementiert)
+│   │   ├── orchestrator.ts  # Route-Handler + API-Endpunkte
+│   │   ├── types.ts         # TypeScript-Interfaces
+│   │   └── functions/       # RAG, Chat, Upload-Funktionen
+│   ├── admin/               # Admin-Modul (vollständig implementiert)
+│   │   ├── orchestrator.ts  # Route-Handler + API-Endpunkte
+│   │   ├── types.ts         # TypeScript-Interfaces
+│   │   └── functions/       # User-Management, Settings, Audit
+│   └── admin-portal/        # Admin-Portal-Modul (NEU v1.0.0, ERWEITERT v2.3.1)
+│       ├── orchestrator.ts  # 50 API-Endpunkte für Multi-Source-Integration
+│       ├── types.ts         # Multi-Source User-Interfaces
+│       ├── core/            # Datenbank-Manager + Schema-Registry
+│       │   ├── database-manager.ts    # 4 externe SQLite-DBs
+│       │   └── schema-registry.ts     # Auto-Schema-Migration
+│       ├── sources/         # 4 User-Quellen-Integration + DataSources Integration
+│       │   ├── entra-source.ts       # Microsoft Graph API + DataSources Client (⭐ ERWEITERT)
+│       │   ├── ldap-source.ts        # LDAP-Server Integration
+│       │   ├── upload-source.ts      # CSV/Excel-Processing
+│       │   └── manual-source.ts      # Web-Form CRUD
+│       └── functions/       # Sync-Orchestration + User-Aggregation + Admin Center Integration
+│           ├── sync-orchestrator.ts  # Multi-Source Sync-Jobs
+│           ├── user-aggregator.ts    # Unified User-View
+│           └── fetchFromAdminCenter.ts # ⭐ NEU: DataSources Entra Integration
 ```
 
 ### Neue Infrastruktur-Abhängigkeiten (v2.1.0)
@@ -62,6 +85,42 @@ frontend/src/
 │   │   ├── SupportModule.tsx # Interne Router-Logik
 │   │   ├── pages/           # Seiten-Komponenten
 │   │   └── styles/          # Modul-spezifische CSS
+│   ├── ai/                  # AI-Frontend-Modul
+│   │   ├── AIModule.tsx     # Interne Router-Logik
+│   │   ├── pages/           # Chat + Docs-Seiten
+│   │   └── styles/          # Modul-spezifische CSS
+│   ├── admin-portal/        # Admin-Portal-Frontend-Modul (ERWEITERT v2.0.0)
+│   │   ├── AdminPortalModule.tsx # Haupt-Router für Untermodule
+│   │   ├── submodules/      # ⭐ NEU: Untermodul-Organisation
+│   │   │   ├── users/       # 👥 Benutzer-Verwaltung Untermodul
+│   │   │   │   ├── UsersModule.tsx     # Router für /users/*
+│   │   │   │   ├── pages/   # 5 User-Management Pages
+│   │   │   │   │   ├── UsersOverviewPage.tsx   # Vereinheitlichte User-Tabelle
+│   │   │   │   │   ├── SyncManagementPage.tsx  # Sync-Jobs & Status
+│   │   │   │   │   ├── UploadPage.tsx          # CSV/Excel-Upload
+│   │   │   │   │   ├── ManualUsersPage.tsx     # Web-basierte User-CRUD
+│   │   │   │   │   └── ConflictsPage.tsx       # E-Mail-Konflikt-Resolution
+│   │   │   │   └── styles/
+│   │   │   │       └── UsersPages.css
+│   │   │   ├── system/      # 📊 System & Analytics Untermodul
+│   │   │   │   ├── SystemModule.tsx    # Router für /system/*
+│   │   │   │   ├── pages/   # 2 System Pages
+│   │   │   │   │   ├── DashboardPage.tsx       # Multi-Source Dashboard
+│   │   │   │   │   └── StatsPage.tsx           # Advanced Analytics
+│   │   │   │   └── styles/
+│   │   │   │       └── SystemPages.css
+│   │   │   └── permissions/ # 🔐 Rechte-Verwaltung Untermodul (NEU)
+│   │   │       ├── PermissionsModule.tsx # Router für /permissions/*
+│   │   │       ├── pages/   # 4 Permission Pages (NEU)
+│   │   │       │   ├── RolesPage.tsx           # Rollen-Management
+│   │   │       │   ├── GroupsPage.tsx          # Gruppen-Verwaltung
+│   │   │       │   ├── TokensPage.tsx          # API-Token-Management
+│   │   │       │   └── AuditPage.tsx           # Audit-Logs & Security
+│   │   │       └── styles/
+│   │   │           └── PermissionsPages.css
+│   │   └── shared/          # ⭐ NEU: Gemeinsame Utils/Components
+│   │       ├── components/
+│   │       └── utils/
 │   └── auth/
 │       └── LoginPage.tsx    # SHARED: Authentifizierung
 └── components/
@@ -116,6 +175,57 @@ backend/src/openapi.ts                           # OpenAPI/Swagger Spezifikation
   - ⭐ **Session Management** (NEU):
     - `POST /api/ai/sessions` (Session erstellen)
     - `GET /api/ai/sessions/:id` (Session laden)
+
+### Admin-Portal / Multi-Source User-Integration (NEU v1.0.0)
+- **4 User-Quellen**: Microsoft Entra ID, LDAP, CSV/Excel-Upload, Manual-Web
+- **ENV (Backend)**:
+  - `ADMIN_PORTAL_DB_PATH` (⭐ ERFORDERLICH: Pfad zu externen SQLite-DBs, z.B. C:/Company_Allg_Data/Admin_Portal/databases/Users)
+  - **Microsoft Entra ID**:
+    - `ENTRA_TENANT_ID` (Azure AD Tenant-ID)
+    - `ENTRA_CLIENT_ID` (Azure AD App Client-ID)  
+    - `ENTRA_CLIENT_SECRET` (Azure AD App Secret)
+    - `GRAPH_SCOPE` (default: https://graph.microsoft.com/.default)
+  - **LDAP Configuration**:
+    - `LDAP_URL` (z.B. ldaps://ldap.company.com:636)
+    - `LDAP_BIND_DN` (Bind-User DN für LDAP-Authentifizierung)
+    - `LDAP_BIND_PW` (Bind-User Password)
+    - `LDAP_BASE_DN` (Base DN für User-Suche, z.B. ou=users,dc=company,dc=com)
+  - **Sync-Verhalten**:
+    - `AUTO_SYNC_ON_STARTUP` (optional: true/false, default false)
+    - `SYNC_BATCH_SIZE` (optional: default 1000)
+- **Externe Datenbanken (Source-of-Truth-per-Database)**:
+  - ⭐ **EXTERN**: 4 separate SQLite-Datenbanken unter `ADMIN_PORTAL_DB_PATH`
+  - `db_entra.sqlite` - Microsoft Entra ID User (read-only via Graph API)
+  - `db_ldap.sqlite` - LDAP-Server User (read-only via LDAPS)
+  - `db_upload.sqlite` - CSV/Excel Upload User (add/replace via File-Upload)
+  - `db_manual.sqlite` - Web-Form User (full CRUD via Interface)
+- **Auto-Schema-Migration**:
+  - 🔧 **Dynamic Fields**: Neue Felder werden automatisch zur Datenbank hinzugefügt
+  - 🔧 **Type-Detection**: Intelligente Datentyp-Erkennung (TEXT, INTEGER, BOOLEAN, DATETIME)
+  - 🔧 **Non-Destructive**: Nur additive Schema-Änderungen (keine Feld-Löschung)
+  - 🔧 **Migration-History**: Tracking via schema_registry-Tabelle
+- **Frontend-API-Bindings** (68+ Endpunkte, ERWEITERT v2.0.0):
+  - **⭐ Entra Admin Center**: `POST /api/admin-portal/entra/fetch-from-admin-center`, `GET /api/admin-portal/entra/check-availability`
+  - **Sync Management**: `POST /api/admin-portal/sync/:source`, `POST /api/admin-portal/sync-all`, `GET /api/admin-portal/sync/status`
+  - **User Overview**: `GET /api/admin-portal/users`, `GET /api/admin-portal/users/email/:email`
+  - **Upload Processing**: `POST /api/admin-portal/upload/analyze`, `POST /api/admin-portal/upload/process`, `GET /api/admin-portal/upload/stats`
+  - **Manual Users**: `POST /api/admin-portal/manual/users`, `GET /api/admin-portal/manual/users`, `PUT /api/admin-portal/manual/users/:id`, `DELETE /api/admin-portal/manual/users/:id`
+  - **Conflict Resolution**: `GET /api/admin-portal/conflicts`, `POST /api/admin-portal/conflicts/resolve`
+  - **Stats & Analytics**: `GET /api/admin-portal/dashboard/stats`, `GET /api/admin-portal/stats/advanced`
+  - **⭐ Permissions System** (NEU v2.0.0): 
+    - `GET /api/admin-portal/permissions/available` (verfügbare Berechtigungen)
+    - `GET/POST/DELETE /api/admin-portal/permissions/roles` (Rollen-Management)
+    - `GET/POST/DELETE /api/admin-portal/permissions/groups` (Gruppen-Management)
+    - `GET/POST /api/admin-portal/permissions/tokens` + `/revoke` (Token-Management)
+    - `GET /api/admin-portal/permissions/audit` (Audit-Logs mit Filtern)
+  - **Scheduler Management**: `GET/POST/PUT/DELETE /api/admin-portal/schedules`, `GET /api/admin-portal/schedules/history`, `POST /api/admin-portal/schedules/test-cron`
+  - **Testing**: `GET /api/admin-portal/test/connections`
+  - **Export**: `GET /api/admin-portal/export/users`
+- **Source-Isolation (KRITISCH)**:
+  - Kein Cross-Source-Writing (Entra/LDAP sind read-only)
+  - Upload/Manual sind vollständig vom Admin-Portal verwaltet
+  - Conflict-Detection funktioniert nur zwischen Sources (keine Auflösung in bestehende DataSources)
+  - Strikte Trennung zu `backend/src/datasources/` (diese bleiben für HR-Modul reserviert)
     - `PUT /api/ai/sessions/:id` (Session aktualisieren)
     - `DELETE /api/ai/sessions/:id` (Session löschen)
     - `GET /api/ai/sessions/search` (Sessions durchsuchen mit Tags/Datum/Text)
@@ -433,6 +543,9 @@ const [Module]Module: React.FC = () => {
 // ALLE MODULE MÜSSEN HIER REGISTRIERT WERDEN:
 import { registerHRRoutes } from './modules/hr/orchestrator';
 import { registerSupportRoutes } from './modules/support/orchestrator';
+import { registerAIRoutes } from './modules/ai/orchestrator';
+import { registerAdminRoutes } from './modules/admin/orchestrator';
+import { registerAdminPortalRoutes } from './modules/admin-portal/orchestrator';
 import { requireAuth } from './modules/hr/core/auth';  // SHARED AUTH
 
 // API-Router mit Auth-Middleware
@@ -442,6 +555,9 @@ apiRouter.use(requireAuth);  // ALLE API-Routen authentifiziert
 // Module registrieren
 registerHRRoutes(apiRouter);
 registerSupportRoutes(apiRouter);
+registerAIRoutes(apiRouter);
+registerAdminRoutes(apiRouter);
+registerAdminPortalRoutes(apiRouter);
 
 // ABHÄNGIGKEITEN FÜR NEUE MODULE:
 // ✅ Import der register[Module]Routes Funktion
@@ -504,6 +620,77 @@ export interface PaginatedResponse<T> {
 // ✅ Konsistente Namens-Conventions befolgen
 ```
 
+### DataSources Dependencies (KRITISCH - HR + Admin Portal Integration)
+
+#### Zentrale DataSources (`backend/src/datasources/`)
+```typescript
+// SHARED ENTRA INTEGRATION (zwischen HR und Admin Portal):
+backend/src/datasources/entraac/
+├── client.ts           # Microsoft Graph API Client (⭐ SHARED)
+│   ├─ getAppToken()    # Azure AD App Token via MSAL
+│   ├─ graphGet<T>()    # Single Graph API Call
+│   ├─ graphGetAllPages<T>() # Paginierte Graph API Calls
+│   └─ testConnection() # Graph API Verbindungstest
+├── store.ts            # In-Memory Store für HR/DataSources
+├── combined.ts         # HR-Modul Combined Interface
+├── sync.ts             # HR-Modul Auto-Sync
+└── types.ts            # Entra User/Device Types
+
+backend/src/datasources/manual/
+├── store.ts            # In-Memory Store für HR/DataSources
+└── index.ts            # Manual User Management für HR
+
+// CROSS-MODULE USAGE:
+// ✅ HR-Modul nutzt: getCombinedUsers(), findCombinedUsers(), createManualUser()
+// ✅ Admin-Portal nutzt: getAppToken(), graphGet(), graphGetAllPages(), testConnection()
+```
+
+#### Admin Portal ↔ DataSources Integration (NEU v2.3.1)
+```typescript
+// Admin Portal EntraSourceService ERWEITERT:
+backend/src/modules/admin-portal/sources/entra-source.ts
+├─ IMPORT: getAppToken, graphGet, graphGetAllPages, testConnection from '../../../datasources/entraac/client'
+├─ fetchAndStoreFromAdminCenter() # ⭐ NEU: Nutzt DataSources Client, speichert in Admin Portal DB
+├─ authenticate() # Nutzt getAppToken() statt eigene Token-Logic
+├─ fetchUsersFromGraph() # Nutzt graphGetAllPages() statt eigene Pagination
+├─ testConnection() # Nutzt DataSources testConnection()
+└─ getUserById() # Nutzt graphGet() statt eigene fetch()
+
+backend/src/modules/admin-portal/functions/fetchFromAdminCenter.ts # ⭐ NEU
+├─ fetchFromAdminCenter() # Wrapper für EntraSourceService.fetchAndStoreFromAdminCenter()
+└─ checkAdminCenterAvailability() # Prüft Konfiguration und Verbindung
+
+// NEW API ENDPOINTS:
+// ✅ POST /api/admin-portal/entra/fetch-from-admin-center
+// ✅ GET /api/admin-portal/entra/check-availability
+
+// ENVIRONMENT DEPENDENCIES (gleiche wie HR DataSources):
+// ✅ AZURE_TENANT_ID (Microsoft Graph Tenant)
+// ✅ AZURE_CLIENT_ID (Microsoft Graph App Client)
+// ✅ AZURE_CLIENT_SECRET (Microsoft Graph App Secret)
+// ✅ GRAPH_BASE_URL (optional: default https://graph.microsoft.com)
+```
+
+#### DataSources ↔ Module Consumption Rules (KRITISCH)
+```typescript
+// HR-MODUL (bestehend, unverändert):
+// ✅ Lesen: getCombinedUsers() aus backend/src/datasources (entra + manual)
+// ✅ Schreiben: createManualUser(), updateManualUser() nur in manual
+// ✅ Stats: getCombinedStats()
+
+// ADMIN-PORTAL (ERWEITERT):
+// ✅ Graph API Client: Teilt DataSources Graph API Logic
+// ✅ Datenbank: Eigene SQLite DBs (getrennt von DataSources Store)
+// ✅ Integration: Nutzt DataSources client.ts aber eigene Speicherung
+// ❌ NICHT: Direkter Zugriff auf DataSources Store (store.ts)
+// ❌ NICHT: Überschreiben der DataSources Daten
+
+// NEUE ABHÄNGIGKEITEN:
+// ✅ Admin Portal Import: import { ... } from '../../../datasources/entraac/client'
+// ✅ Shared Graph API Logic zwischen HR DataSources und Admin Portal
+// ✅ Separate Speicher-Systeme (DataSources vs Admin Portal DBs)
+```
+
 ---
 
 ## 🎨 Frontend-Module-Dependencies
@@ -553,7 +740,69 @@ const navigationItems = [
     submenu: [
       { title: 'Mitarbeiter', path: '/hr/employees', icon: '👤' },
       { title: 'Onboarding', path: '/hr/onboarding', icon: '🎯' },
-      // etc.
+      { title: 'Berichte', path: '/hr/reports', icon: '📈' },
+      { title: 'Statistiken', path: '/hr/stats', icon: '📊' }
+    ]
+  },
+  {
+    title: 'Support Module',
+    path: '/support', 
+    icon: '🎫',
+    active: location.pathname.startsWith('/support'),
+    submenu: [
+      { title: 'Tickets', path: '/support/tickets', icon: '📋' },
+      { title: 'Neues Ticket', path: '/support/create', icon: '➕' },
+      { title: 'Dashboard', path: '/support/dashboard', icon: '📊' }
+    ]
+  },
+  {
+    title: 'AI',
+    path: '/ai',
+    icon: '🤖', 
+    active: location.pathname.startsWith('/ai'),
+    submenu: [
+      { title: 'Chat', path: '/ai/chat', icon: '💬' },
+      { title: 'Dokumente', path: '/ai/docs', icon: '📚' }
+    ]
+  },
+  {
+    title: 'Admin-Portal',
+    path: '/admin-portal',
+    icon: '🏢',
+    active: location.pathname.startsWith('/admin-portal'),
+    submenu: [
+      {
+        title: '📊 System',
+        path: '/admin-portal/system',
+        icon: '📊',
+        submenu: [
+          { title: 'Dashboard', path: '/admin-portal/system/dashboard', icon: '📊' },
+          { title: 'Statistiken', path: '/admin-portal/system/stats', icon: '📈' }
+        ]
+      },
+      {
+        title: '👥 Benutzer', 
+        path: '/admin-portal/users',
+        icon: '👥',
+        submenu: [
+          { title: 'Übersicht', path: '/admin-portal/users/overview', icon: '👥' },
+          { title: 'Synchronisation', path: '/admin-portal/users/sync', icon: '🔄' },
+          { title: 'Upload', path: '/admin-portal/users/upload', icon: '📤' },
+          { title: 'Manuell', path: '/admin-portal/users/manual', icon: '✋' },
+          { title: 'Konflikte', path: '/admin-portal/users/conflicts', icon: '⚠️' }
+        ]
+      },
+      {
+        title: '🔐 Rechte',
+        path: '/admin-portal/permissions', 
+        icon: '🔐',
+        submenu: [
+          { title: 'Rollen', path: '/admin-portal/permissions/roles', icon: '👑' },
+          { title: 'Gruppen', path: '/admin-portal/permissions/groups', icon: '👥' },
+          { title: 'API-Tokens', path: '/admin-portal/permissions/tokens', icon: '🎫' },
+          { title: 'Audit-Logs', path: '/admin-portal/permissions/audit', icon: '📋' }
+        ]
+      }
     ]
   }
   // etc.

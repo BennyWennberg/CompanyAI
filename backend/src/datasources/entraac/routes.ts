@@ -20,7 +20,7 @@ export async function handleGetUsers(req: AuthenticatedRequest, res: Response) {
     const accountEnabled = req.query.accountEnabled === 'true' ? true : req.query.accountEnabled === 'false' ? false : undefined;
     const search = req.query.search as string;
 
-    const users = findCombinedUsers({
+    const users = await findCombinedUsers({
       source,
       department,
       accountEnabled,
@@ -56,7 +56,7 @@ export async function handleGetDevices(req: AuthenticatedRequest, res: Response)
     const accountEnabled = req.query.accountEnabled === 'true' ? true : req.query.accountEnabled === 'false' ? false : undefined;
     const search = req.query.search as string;
 
-    const devices = findCombinedDevices({
+    const devices = await findCombinedDevices({
       source,
       operatingSystem,
       accountEnabled,
@@ -293,7 +293,7 @@ export async function handleGetStats(req: AuthenticatedRequest, res: Response) {
   try {
     logAuthEvent(req.user?.email || 'unknown', 'read', 'directory-stats', req.reqId);
 
-    const stats = getCombinedStats();
+    const stats = await getCombinedStats();
 
     res.json({
       success: true,
@@ -319,7 +319,7 @@ export async function handleGetSources(req: AuthenticatedRequest, res: Response)
   try {
     logAuthEvent(req.user?.email || 'unknown', 'read', 'directory-sources', req.reqId);
 
-    const sources = getAvailableDataSources();
+    const sources = await getAvailableDataSources();
 
     res.json({
       success: true,

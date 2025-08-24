@@ -22,14 +22,22 @@ docs/
 │   │   ├── README.md                 # HR-Modul Übersicht
 │   │   ├── API.md                    # HR-API Dokumentation
 │   │   └── CHANGELOG.md              # HR-Änderungshistorie
-│   └── support/                      # Support-Modul Dokumentation
-│       ├── README.md                 # Support-Modul Übersicht
-│       ├── API.md                    # Support-API Dokumentation
-│       └── CHANGELOG.md              # Support-Änderungshistorie
-│   └── ai/                            # AI-Modul Dokumentation
-│       ├── README.md                  # AI-Modul Übersicht
-│       ├── API.md                     # AI- und RAG-API Dokumentation
-│       └── CHANGELOG.md               # AI-Änderungshistorie
+│   ├── support/                      # Support-Modul Dokumentation
+│   │   ├── README.md                 # Support-Modul Übersicht
+│   │   ├── API.md                    # Support-API Dokumentation
+│   │   └── CHANGELOG.md              # Support-Änderungshistorie
+│   ├── ai/                           # AI-Modul Dokumentation
+│   │   ├── README.md                 # AI-Modul Übersicht
+│   │   ├── API.md                    # AI- und RAG-API Dokumentation
+│   │   └── CHANGELOG.md              # AI-Änderungshistorie
+│   ├── admin/                        # Admin-Modul Dokumentation
+│   │   ├── README.md                 # Admin-Modul Übersicht
+│   │   ├── API.md                    # Admin-API Dokumentation
+│   │   └── CHANGELOG.md              # Admin-Änderungshistorie
+│   └── admin-portal/                 # Admin-Portal-Modul Dokumentation (NEU v1.0.0)
+│       ├── README.md                 # Admin-Portal Übersicht (500+ Zeilen)
+│       ├── API.md                    # Admin-Portal API-Dokumentation (48 Endpunkte)
+│       └── CHANGELOG.md              # Admin-Portal Änderungshistorie
 └── architecture/                     # Technische Architektur-Docs
     ├── overview.md                   # System-Architektur Übersicht
     ├── module-guidelines.md          # Modul-Entwicklungsrichtlinien
@@ -92,7 +100,54 @@ docs/
 #### [modules/ai/CHANGELOG.md](./modules/ai/CHANGELOG.md) - AI-Änderungshistorie
 - Versionierung für AI-spezifische Änderungen
 
-### 🏢 HR-Modul Dokumentation
+### 🏢 Admin-Portal-Modul Dokumentation (ERWEITERT v2.0.0)
+
+#### [modules/admin-portal/README.md](./modules/admin-portal/README.md) - Admin-Portal Übersicht
+- **Inhalt:** Vollständige Multi-Source User-Integration + Untermodul-Architektur Dokumentation
+- **Umfang:** 600+ Zeilen (erweitert um Permission-System)
+- **Abdeckt:**
+  - 4 User-Quellen: Microsoft Entra ID, LDAP, CSV/Excel-Upload, Manual-Web
+  - **NEU v2.0.0:** 3 Untermodule-Struktur (System, Benutzer, Rechte)
+  - **NEU v2.0.0:** Vollständiges Permission-System (Rollen, Gruppen, Tokens, Audit)
+  - Auto-Schema-Discovery und dynamische Datenbank-Migration
+  - Source-of-Truth-per-Database Architektur
+  - Conflict-Detection und Resolution-Strategien
+  - Setup-Anleitungen für Microsoft Azure App-Registrierung
+  - LDAP-Server-Konfiguration (Active Directory, OpenLDAP)
+  - **NEU:** Hierarchische Frontend-Navigation und URL-Struktur
+  - Troubleshooting-Guide für häufige Integrationsprobleme
+
+#### [modules/admin-portal/API.md](./modules/admin-portal/API.md) - Admin-Portal API-Dokumentation  
+- **Inhalt:** Vollständige API-Referenz für Multi-Source User-Management + Permission-System
+- **Umfang:** 1300+ Zeilen (erweitert um Permission-APIs)
+- **Abdeckt:**
+  - 68+ REST-API-Endpunkte mit Request/Response-Schemas (erweitert von 48)
+  - Sync-Management-APIs für Entra ID und LDAP
+  - Upload-Processing-APIs für CSV/Excel-Bulk-Import
+  - Manual-User-CRUD-APIs für Web-basierte User-Verwaltung
+  - Conflict-Resolution-APIs für E-Mail-Duplikat-Management
+  - **NEU v2.0.0:** Permission-System-APIs (20 neue Endpunkte)
+    - Rollen-Management mit granularen Berechtigungen
+    - Gruppen-Verwaltung mit Rollen-Zuweisung
+    - API-Token-Management für externe Integrationen
+    - Audit-Logs mit erweiterten Filteroptionen
+  - Dashboard & Analytics-APIs für Statistiken und Metriken
+  - PowerShell-Integration-Beispiele für Scripting und Automation
+  - Error-Handling mit deutschen User-Messages und englischen Error-Types
+
+#### [modules/admin-portal/CHANGELOG.md](./modules/admin-portal/CHANGELOG.md) - Admin-Portal Änderungshistorie
+- **Inhalt:** Admin-Portal-spezifische Versionshistorie mit Major-Update v2.0.0
+- **Umfang:** 600+ Zeilen (erweitert um v2.0.0 Breaking Changes)
+- **Abdeckt:**
+  - **NEU v2.0.0:** Vollständige Untermodul-Umstrukturierung (Breaking Changes)
+  - **NEU v2.0.0:** Permission-System Implementation (Rollen, Gruppen, Tokens, Audit)
+  - **NEU v2.0.0:** Hierarchische Navigation und URL-Migration
+  - Code-Metriken: 5600+ Backend-Zeilen, 3200+ Frontend-Zeilen
+  - Integration-Details: 4 Datenbanken, 68+ API-Endpunkte, 11 Frontend-Pages
+  - Migration-Guide von v1.x zu v2.0.0
+  - Roadmap für v2.1.0-v3.0.0 (Email-Notifications, Multi-Tenant, ML-basierte Features)
+
+### 👥 HR-Modul Dokumentation
 
 #### [modules/hr/README.md](./modules/hr/README.md) - HR-Modul Übersicht
 - **Inhalt:** Vollständige HR-Modul Dokumentation
@@ -171,9 +226,11 @@ docs/
 
 ## 🎯 Dokumentations-Features
 
-- ### ✅ Vollständige Abdeckung (v2.1.0)
-- **Alle Module dokumentiert:** HR, Support + Security-Updates
-- **Alle API-Endpunkte:** 11 Endpunkte vollständig beschrieben + Auth-Validierung
+- ### ✅ Vollständige Abdeckung (v2.1.0 + Admin-Portal v2.0.0)
+- **Alle Module dokumentiert:** HR, Support, AI, Admin, Admin-Portal (mit Untermodulen) + Security-Updates
+- **Alle API-Endpunkte:** 79+ Endpunkte vollständig beschrieben + Auth-Validierung (HR: 8, Support: 3, Admin-Portal: 68+)
+- **NEU v2.0.0:** Permission-System vollständig dokumentiert (Rollen, Gruppen, Tokens, Audit)
+- **NEU v2.0.0:** Untermodul-Architektur und hierarchische Navigation
 - **Vollständige Beispiele:** Request/Response für jeden Endpunkt
 - **Error-Handling:** Standardisierte Error-Typen (ValidationError, NotFound, etc.)
 - **Code-Beispiele:** PowerShell, TypeScript, curl + Auth-Guard Patterns
@@ -207,6 +264,16 @@ OLLAMA_URL=http://localhost:11434
 RAG_INDEX_PATH=./backend/rag_index.json
 RAG_EMBEDDING_PROVIDER=openai  # openai | gemini | ollama
 RAG_EMBEDDING_MODEL=text-embedding-3-small
+# Admin-Portal Multi-Source Integration
+ADMIN_PORTAL_DB_PATH=C:\Code\Company_Allg_Data\Admin_Portal\databases\Users
+ENTRA_TENANT_ID=your_tenant_id
+ENTRA_CLIENT_ID=your_client_id
+ENTRA_CLIENT_SECRET=your_client_secret
+LDAP_URL=ldaps://ldap.company.com:636
+LDAP_BIND_DN=cn=readonly,dc=company,dc=com
+LDAP_BIND_PW=your_password
+LDAP_BASE_DN=ou=users,dc=company,dc=com
+AUTO_SYNC_ON_STARTUP=true
 ```
 
 ```
@@ -240,16 +307,18 @@ VITE_SIDEBAR_WIDTH=280px
 ## 📊 Dokumentations-Statistiken
 
 ### Umfang
-- **Gesamt-Dateien:** 9 Markdown-Dateien
-- **Gesamt-Zeilen:** ~3.000 Zeilen Dokumentation
-- **Code-Beispiele:** 50+ praktische Beispiele
-- **API-Endpunkte:** 11 vollständig dokumentiert
+- **Gesamt-Dateien:** 20+ Markdown-Dateien (mit Admin-Portal v2.0.0 Erweiterungen)
+- **Gesamt-Zeilen:** ~4.500 Zeilen Dokumentation
+- **Code-Beispiele:** 80+ praktische Beispiele
+- **API-Endpunkte:** 79+ vollständig dokumentiert
+- **Frontend-Pages:** 18+ vollständig dokumentiert (mit Untermodule-Struktur)
 
 ### Qualität
-- **Vollständigkeit:** 100% aller implementierten Features
-- **Aktualität:** Stand 8. Dezember 2024
+- **Vollständigkeit:** 100% aller implementierten Features inkl. Permission-System
+- **Aktualität:** Stand 22. Dezember 2024 (v2.0.0)
 - **Konsistenz:** Einheitliche Struktur und Terminologie
 - **Praxistauglichkeit:** Sofort verwendbare Beispiele
+- **Architektur-Compliance:** Vollständige Untermodul-Standards dokumentiert
 
 ## 🚀 Nutzung der Dokumentation
 

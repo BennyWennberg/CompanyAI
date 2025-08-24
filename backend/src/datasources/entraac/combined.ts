@@ -36,12 +36,13 @@ function convertEntraDevice(device: EntraDevice): CombinedDevice {
 /**
  * Gibt alle Benutzer aus der gewählten Quelle zurück
  */
-export function getCombinedUsers(source: DataSource = 'all'): CombinedUser[] {
+export async function getCombinedUsers(source: DataSource = 'all'): Promise<CombinedUser[]> {
   let users: CombinedUser[] = [];
 
   if (source === 'all' || source === 'entra') {
-    const entraUsers = getEntraUsers().map(convertEntraUser);
-    users.push(...entraUsers);
+    const entraUsers = await getEntraUsers();
+    const convertedEntraUsers = entraUsers.map(convertEntraUser);
+    users.push(...convertedEntraUsers);
   }
 
   if (source === 'all' || source === 'manual') {
@@ -56,12 +57,13 @@ export function getCombinedUsers(source: DataSource = 'all'): CombinedUser[] {
 /**
  * Gibt alle Geräte aus der gewählten Quelle zurück
  */
-export function getCombinedDevices(source: DataSource = 'all'): CombinedDevice[] {
+export async function getCombinedDevices(source: DataSource = 'all'): Promise<CombinedDevice[]> {
   let devices: CombinedDevice[] = [];
 
   if (source === 'all' || source === 'entra') {
-    const entraDevices = getEntraDevices().map(convertEntraDevice);
-    devices.push(...entraDevices);
+    const entraDevices = await getEntraDevices();
+    const convertedEntraDevices = entraDevices.map(convertEntraDevice);
+    devices.push(...convertedEntraDevices);
   }
 
   if (source === 'all' || source === 'manual') {
@@ -76,13 +78,13 @@ export function getCombinedDevices(source: DataSource = 'all'): CombinedDevice[]
 /**
  * Filtert kombinierte Benutzer nach Kriterien
  */
-export function findCombinedUsers(filter: {
+export async function findCombinedUsers(filter: {
   source?: DataSource;
   department?: string;
   accountEnabled?: boolean;
   search?: string;
-}): CombinedUser[] {
-  let users = getCombinedUsers(filter.source);
+}): Promise<CombinedUser[]> {
+  let users = await getCombinedUsers(filter.source);
 
   if (filter.department) {
     users = users.filter(user => 
@@ -110,13 +112,13 @@ export function findCombinedUsers(filter: {
 /**
  * Filtert kombinierte Geräte nach Kriterien
  */
-export function findCombinedDevices(filter: {
+export async function findCombinedDevices(filter: {
   source?: DataSource;
   operatingSystem?: string;
   accountEnabled?: boolean;
   search?: string;
-}): CombinedDevice[] {
-  let devices = getCombinedDevices(filter.source);
+}): Promise<CombinedDevice[]> {
+  let devices = await getCombinedDevices(filter.source);
 
   if (filter.operatingSystem) {
     devices = devices.filter(device => 
@@ -143,10 +145,10 @@ export function findCombinedDevices(filter: {
 /**
  * Findet einen Benutzer nach ID (aus beiden Quellen)
  */
-export function findCombinedUserById(id: string): CombinedUser | undefined {
+export async function findCombinedUserById(id: string): Promise<CombinedUser | undefined> {
   // Erst in Entra suchen
-  const entraUsers = getEntraUsers();
-  const entraUser = entraUsers.find(u => u.id === id);
+  const entraUsers = await getEntraUsers();
+  const entraUser = entraUsers.find((u: EntraUser) => u.id === id);
   if (entraUser) {
     return convertEntraUser(entraUser);
   }
@@ -164,10 +166,10 @@ export function findCombinedUserById(id: string): CombinedUser | undefined {
 /**
  * Findet ein Gerät nach ID (aus beiden Quellen)
  */
-export function findCombinedDeviceById(id: string): CombinedDevice | undefined {
+export async function findCombinedDeviceById(id: string): Promise<CombinedDevice | undefined> {
   // Erst in Entra suchen
-  const entraDevices = getEntraDevices();
-  const entraDevice = entraDevices.find(d => d.id === id);
+  const entraDevices = await getEntraDevices();
+  const entraDevice = entraDevices.find((d: EntraDevice) => d.id === id);
   if (entraDevice) {
     return convertEntraDevice(entraDevice);
   }
@@ -185,7 +187,7 @@ export function findCombinedDeviceById(id: string): CombinedDevice | undefined {
 /**
  * Gibt kombinierte Statistiken zurück
  */
-export function getCombinedStats(): {
+export async function getCombinedStats(): Promise<{
   users: {
     total: number;
     enabled: number;
@@ -200,9 +202,9 @@ export function getCombinedStats(): {
     bySource: { entra: number; manual: number };
     byOS: Record<string, number>;
   };
-} {
-  const allUsers = getCombinedUsers();
-  const allDevices = getCombinedDevices();
+}> {
+  const allUsers = await getCombinedUsers();
+  const allDevices = await getCombinedDevices();
 
   // User Statistiken
   const userStats = {
@@ -242,8 +244,8 @@ export function getCombinedStats(): {
 /**
  * Überprüft ob eine E-Mail/UPN bereits verwendet wird (in beiden Quellen)
  */
-export function isEmailOrUpnInUse(email?: string, upn?: string, excludeId?: string): boolean {
-  const allUsers = getCombinedUsers();
+export async function isEmailOrUpnInUse(email?: string, upn?: string, excludeId?: string): Promise<boolean> {
+  const allUsers = await getCombinedUsers();
   
   return allUsers.some(user => 
     user.id !== excludeId && (
@@ -256,8 +258,8 @@ export function isEmailOrUpnInUse(email?: string, upn?: string, excludeId?: stri
 /**
  * Überprüft ob ein Gerätename bereits verwendet wird (in beiden Quellen)
  */
-export function isDeviceNameInUse(displayName: string, deviceId?: string, excludeId?: string): boolean {
-  const allDevices = getCombinedDevices();
+export async function isDeviceNameInUse(displayName: string, deviceId?: string, excludeId?: string): Promise<boolean> {
+  const allDevices = await getCombinedDevices();
   
   return allDevices.some(device => 
     device.id !== excludeId && (
@@ -270,16 +272,16 @@ export function isDeviceNameInUse(displayName: string, deviceId?: string, exclud
 /**
  * Gibt verfügbare Datenquellen zurück
  */
-export function getAvailableDataSources(): { 
+export async function getAvailableDataSources(): Promise<{ 
   source: DataSource; 
   label: string; 
   description: string; 
   userCount: number; 
   deviceCount: number; 
-}[] {
-  const entraUsers = getEntraUsers();
+}[]> {
+  const entraUsers = await getEntraUsers();
   const manualUsers = getManualUsers();
-  const entraDevices = getEntraDevices();
+  const entraDevices = await getEntraDevices();
   const manualDevices = getManualDevices();
 
   return [

@@ -335,7 +335,11 @@ export async function deleteChatSession(
   try {
     const currentSession = await getChatSession(sessionId);
     if (!currentSession.success || !currentSession.data) {
-      return currentSession;
+      return { 
+        success: false, 
+        error: currentSession.error || 'SessionNotFound', 
+        message: currentSession.message || 'Chat-Session nicht gefunden' 
+      };
     }
 
     const session = currentSession.data;

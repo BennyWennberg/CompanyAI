@@ -112,7 +112,7 @@ const LoginPage: React.FC = () => {
         </p>
         <div className="api-info">
           <strong>Backend API:</strong> http://localhost:5000<br />
-          <strong>API-Dokumentation:</strong> <a href="http://localhost:5000/api/hello" target="_blank" rel="noopener noreferrer">API Übersicht</a>
+          <strong>API-Dokumentation:</strong> <a href="http://localhost:5000/api/hello" target="companyai-api-docs" rel="noopener noreferrer">API Übersicht</a>
         </div>
       </div>
     </div>

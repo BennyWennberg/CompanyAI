@@ -1,58 +1,21 @@
-# CompanyAI - PR/Review Rules (Enforced)
+# CompanyAI - Entwicklungsregeln & Standards
 
-## Must-pass Checks (CI / Local)
-- Run `npm run check:rules` before build/merge.
-- Build must pass: `npm run build` runs rule checks via prebuild.
+## 🚀 Must-Pass Checks (CI/Local)
+- Run `npm run check:rules` before build/merge
+- Build must pass: `npm run build` runs rule checks via prebuild
+- Script `tools/verify-rules.ps1` performs automated checks and must pass
 
-## Documentation Gates (Critical)
-- Any change in `backend/src/datasources/**` or `backend/src/modules/**` touching APIs/routes requires updates to:
-  - `docs/INTERDEPENDENCY.md`
-  - `docs/DOCUMENTATION_OVERVIEW.md`
-  - `docs/CHANGELOG.md`
-  - `docs/modules/[module]/API.md` (if endpoints changed/added)
-  - `docs/modules/[module]/README.md` (if behavior/usage changed)
-- Markdown files are only allowed in `docs/**` and top-level `README.md` (plus optional `backend/README.md`, `frontend/README.md`). Others will fail the check.
+---
 
-## AI / RAG Integration Rules
-- If `backend/src/modules/ai/**` changes:
-  - Ensure `docs/modules/ai/API.md` documents endpoints `/api/ai/chat`, `/api/ai/hr-assist`, `/api/ai/rag/*`.
-  - Ensure `docs/INTERDEPENDENCY.md` contains AI/RAG ENV and Frontend bindings.
-  - Required ENV (if respective provider is used): `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OLLAMA_URL`, `RAG_INDEX_PATH`, `RAG_EMBEDDING_PROVIDER`, `RAG_EMBEDDING_MODEL`.
+## 🏗️ BACKEND-ARCHITEKTUR
 
-## Dependency Hygiene
-- Backend: `@types/*` packages must be in `devDependencies` only.
-- Frontend: `react-router-dom` must be v6.x; do not upgrade to v7 without migration plan and doc updates.
-- Remove unused packages; add missing ones used by imports.
+### Module-Standards (PFLICHT)
+Befolge IMMER diese modulbasierte Struktur für `backend/src/modules/`:
 
-## Module Architecture (Backend)
-- New modules follow `backend/src/modules/[module]/` standard: `orchestrator.ts`, `types.ts`, `functions/**`, optional `core/**`.
-- Register routes in `backend/src/app.ts` with `register[Module]Routes(apiRouter)`.
-- Use `AuthenticatedRequest`, `requireAuth`, and `requirePermission` from `hr/core/auth`.
-- All responses use `APIResponse<T>`.
-
-## Frontend Module Standards
-- New modules under `frontend/src/modules/[module]/` with `[Module]Module.tsx`, `pages/**`, `styles/**`.
-- Router registration in `frontend/src/App.tsx`; Sidebar entry in `layouts/components/Sidebar.tsx`.
-- Pages implement loading, error, empty states; use Auth token.
-
-## Always Check Rules
-- On every change request and code review, verify these rules first.
-- Script `tools/verify-rules.ps1` performs automated checks and must pass.
-
-# CompanyAI - Modulbasierte Architektur Regeln
-# Diese Regeln gelten ALLGEMEIN für ALLE Module (Backend und Frontend).
-# Spezifische Beispiele dürfen niemals als Ausnahmen interpretiert werden –
-# jede neue Modul-Implementation muss diese Standards vollständig erfüllen.
-
-## Modulstruktur Standards
-
-Befolge IMMER diese modulbasierte Ordnerstruktur für alle Module in `backend/src/modules/`:
-
-### Pflicht-Struktur für jedes neue Modul:
 ```
 backend/src/modules/[module-name]/
-├── orchestrator.ts        # PFLICHT: API-Route-Handler und Koordination
-├── types.ts              # PFLICHT: TypeScript-Interfaces und Typen
+├── orchestrator.ts        # PFLICHT: API-Route-Handler
+├── types.ts              # PFLICHT: TypeScript-Interfaces  
 ├── core/                 # OPTIONAL: Wiederverwendbare Hilfslogik
 │   └── [helper-files].ts # z.B. auth.ts, utils.ts, validators.ts
 └── functions/            # PFLICHT: Geschäftslogik-Funktionen
@@ -61,14 +24,13 @@ backend/src/modules/[module-name]/
     └── [function3].ts    # Export von async functions
 ```
 
-## Datei-Standards
+### Code-Templates (PFLICHT)
 
-### 1. types.ts - IMMER enthalten:
+#### 1. types.ts - IMMER enthalten:
 ```typescript
-// Input-Request-Typen
+// Request-Typen
 export interface Create[Entity]Request { ... }
 export interface Update[Entity]Request { ... }
-export interface Search[Entity]Request { ... }
 
 // Entity-Typen
 export interface [Entity] { 
@@ -83,23 +45,12 @@ export interface APIResponse<T> {
   error?: string;
   message?: string;
 }
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
 ```
 
-### 2. orchestrator.ts - IMMER enthalten:
+#### 2. orchestrator.ts - IMMER enthalten:
 ```typescript
 import { Request, Response } from 'express';
-import { AuthenticatedRequest } from '../hr/core/auth'; // Zentrale Auth nutzen
+import { AuthenticatedRequest } from '../hr/core/auth';
 
 export class [Module]Orchestrator {
   static async handle[Action](req: AuthenticatedRequest, res: Response) {
@@ -112,15 +63,12 @@ export function register[Module]Routes(router: any) {
 }
 ```
 
-### 3. functions/[function].ts - Eine Funktion pro Datei:
+#### 3. functions/[function].ts - Eine Funktion pro Datei:
 ```typescript
-import { [Entity], [Request]Type, APIResponse } from '../types';
-
 export async function [functionName](
   request: [Request]Type
 ): Promise<APIResponse<[Entity]>> {
   try {
-    // Implementation
     return { success: true, data: result, message: 'Success' };
   } catch (error) {
     return { success: false, error: 'Error', message: 'Failed' };
@@ -128,322 +76,378 @@ export async function [functionName](
 }
 ```
 
-## Integration-Standards
+### Integration-Requirements (PFLICHT)
+1. ✅ Module MÜSSEN in `backend/src/app.ts` registriert werden
+2. ✅ Import: `import { register[Module]Routes } from './modules/[module]/orchestrator';`
+3. ✅ Route registrieren: `register[Module]Routes(apiRouter);`
+4. ✅ Module-Liste in `/api/hello` endpoint aktualisieren
+5. ✅ Alle Responses nutzen `APIResponse<T>` Format
+6. ✅ Deutsche Fehlermeldungen für User, englische Error-Types für Logging
+7. ✅ PowerShell-Test-Scripts erstellen
 
-### Neue Module MÜSSEN in backend/src/index.ts registriert werden:
-1. Import hinzufügen: `import { register[Module]Routes } from './modules/[module]/orchestrator';`
-2. Route registrieren: `register[Module]Routes(apiRouter);`
-3. Module-Liste aktualisieren in health/hello endpoints
-4. Dokumentation in availableModules ergänzen
+### Naming Conventions
+- **Module-Namen**: `hr`, `support`, `user-management` (lowercase mit Bindestrichen)
+- **API-Routen**: RESTful `/api/[module]/[entities]`
+- **Funktions-Namen**: Verben verwenden (`createEmployee`, `fetchTickets`)
+- **Datei-Namen**: camelCase (`createHRReport.ts`, `manageTickets.ts`)
 
-### Authentifizierung - IMMER nutzen:
-- Import: `import { AuthenticatedRequest, requireAuth, requirePermission } from '../hr/core/auth';`
-- Für geschützte Routes: `requireAuth` oder `requirePermission(action, resource)`
-- Logging: `logAuthEvent(userId, action, resource)`
+### NICHT ERLAUBT (Backend):
+❌ Module ohne `orchestrator.ts` oder `types.ts`  
+❌ Geschäftslogik direkt in `orchestrator.ts`  
+❌ Fehlende Error-Handling  
+❌ Untypisierte API-Responses  
+❌ Module, die nicht in `app.ts` registriert sind  
+❌ Direkte Datenbankzugriffe ohne Abstraktionsschicht
 
-## Naming Conventions
+---
+## 💻 FRONTEND-ARCHITEKTUR
 
-### Module-Namen:
-- Kleinschreibung mit Bindestrichen: `hr`, `support`, `user-management`
-- Beschreibende Namen, nicht zu allgemein
+### Module-Standards (PFLICHT)
+```
+frontend/src/modules/[module]/
+├── [Module]Module.tsx     # Haupt-Modul mit Router
+├── pages/                # Seiten-Komponenten
+│   ├── [Feature]Page.tsx
+│   └── [Feature]Page.tsx
+└── styles/
+    └── [Module]Pages.css
+```
 
-### API-Routen:
-- RESTful: `/api/[module]/[entities]`
-- Beispiele: `/api/hr/employees`, `/api/support/tickets`
+### Code-Templates (PFLICHT)
 
-### Funktions-Namen:
-- Verben verwenden: `createEmployee`, `fetchTickets`, `generateReport`
-- Async functions für alle Geschäftslogik
-- Klare, beschreibende Namen
-
-### Datei-Namen:
-- camelCase für Functions: `createHRReport.ts`, `manageTickets.ts`
-- Beschreibende Namen, die den Inhalt widerspiegeln
-
-## Code-Standards
-
-### Error Handling:
+#### 1. Modul-Router-Pattern:
 ```typescript
-try {
-  // Implementation
-  return { success: true, data: result, message: 'Success message' };
-} catch (error) {
-  console.error('Descriptive error message:', error);
-  return {
-    success: false,
-    error: 'User-friendly error type',
-    message: 'German error message for user'
+const [Module]Module: React.FC = () => {
+  return (
+    <div className="[module]-module">
+      <Routes>
+        <Route path="/" element={<Navigate to="/[module]/[default]" replace />} />
+        <Route path="/[page]" element={<[Page]Page />} />
+        <Route path="*" element={<Navigate to="/[module]/[default]" replace />} />
+      </Routes>
+    </div>
+  );
+};
+```
+
+#### 2. Page-Komponenten-Pattern:
+```typescript
+const [Page]Page: React.FC = () => {
+  const [data, setData] = useState<[Entity][]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('http://localhost:5000/api/[module]/[endpoint]', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      // Error-Handling...
+    } catch (err) {
+      setError('Verbindungsfehler zum Backend');
+    }
   };
+
+  return (
+    <div className="[module]-page">
+      <div className="page-header">
+        <div className="page-title">
+          <h1>[Title]</h1>
+        </div>
+      </div>
+      <div className="content-section">
+        {/* Content */}
+      </div>
+    </div>
+  );
+};
+```
+
+### CSS-Standards (PFLICHT)
+```css
+/* Basis-Layout-Klassen */
+.[module]-page          # Haupt-Container
+.page-header           # Header mit Titel und Actions
+.page-title            # Titel-Bereich
+.content-section       # Haupt-Inhalt
+
+/* Button-Klassen */
+.btn                   # Basis-Button
+.btn-primary           # Haupt-Action (blau)
+.btn-secondary         # Sekundär-Action (grau)
+
+/* Status-Klassen */
+.loading-state         # Loading-Zustand
+.error-state           # Fehler-Zustand
+.empty-state           # Leerer Zustand
+```
+
+### Integration-Requirements (PFLICHT)
+1. ✅ Route in `frontend/src/App.tsx` registrieren
+2. ✅ Navigation in `frontend/src/layouts/components/Sidebar.tsx` hinzufügen
+3. ✅ Dashboard-Kachel in `frontend/src/components/Dashboard.tsx` erstellen
+4. ✅ Loading-, Error- und Empty-States implementieren
+5. ✅ Auth-Token bei allen API-Calls verwenden
+6. ✅ Responsive Design testen
+
+### NICHT ERLAUBT (Frontend):
+❌ Direkte Layout-Imports in Modulen  
+❌ Inline-Styles statt CSS-Klassen  
+❌ API-Calls ohne Error-Handling  
+❌ Fehlende Loading-States  
+❌ Module ohne Router-Integration  
+❌ Authentifizierung umgehen
+
+---
+## 🔐 USER & PERMISSIONS SYSTEM
+
+### Authentifizierung (PFLICHT für alle Module)
+```typescript
+// Backend - IMMER nutzen:
+import { AuthenticatedRequest, requireAuth, requirePermission } from '../hr/core/auth';
+// Für geschützte Routes: requireAuth oder requirePermission(action, resource)
+// Logging: logAuthEvent(userId, action, resource)
+
+// Frontend - IMMER nutzen:
+const token = localStorage.getItem('authToken');
+const headers = {
+  'Authorization': `Bearer ${token}`,
+  'Content-Type': 'application/json'
+};
+```
+
+### Hierarchical Permissions Integration (KRITISCH - v2.1.0+)
+
+**Bei JEDEM neuen Modul PFLICHT:**
+
+#### 1. Backend hierarchyAnalyzer.ts erweitern:
+```typescript
+export const MODULE_DEFINITIONS = [
+  {
+    key: "[new-module]",
+    name: "[Module Display Name]",
+    icon: "[Icon]",
+    pages: [
+      {
+        key: "[page1]",
+        name: "[Page Display Name]",
+        icon: "[Page Icon]",
+        actions: [
+          { key: "view", name: "Anzeigen", description: "..." },
+          { key: "create", name: "Erstellen", description: "..." },
+          { key: "edit", name: "Bearbeiten", description: "..." },
+          { key: "delete", name: "Löschen", description: "..." }
+        ],
+        limits: [ // Optional
+          { key: "dailyQuota", name: "Tägliche Anfragen", type: "number", defaultValue: 100 }
+        ]
+      }
+    ]
+  }
+];
+```
+
+#### 2. Backend Permission-Checks (PFLICHT):
+```typescript
+export class [Module]Orchestrator {
+  static async handle[Action](req: AuthenticatedRequest, res: Response) {
+    const hasPermission = await checkHierarchicalPermission(
+      req.user.id, '[module]', '[page]', '[action]'
+    );
+    
+    if (!hasPermission) {
+      return res.status(403).json({
+        success: false,
+        error: 'PermissionDenied',
+        message: 'Keine Berechtigung für diese Aktion'
+      });
+    }
+    // Rest der Handler-Logik...
+  }
 }
 ```
 
-### Validation:
-- Immer Request-Daten validieren
-- Separate Validation-Funktionen erstellen
-- Früh validieren, früh zurückgeben bei Fehlern
-
-### Responses:
-- IMMER APIResponse<T> Format verwenden
-- Deutsche Fehlermeldungen für User
-- Englische Fehler-Types für Logging
-- Konsistente HTTP-Status-Codes
-
-## PowerShell Kompatibilität
-- Bevorzuge `;` statt `&&` in npm scripts
-- Erstelle .ps1 Scripts für Module-spezifische Tasks
-- Nutze PowerShell-freundliche Pfade
-
-## Dokumentation Standards
-
-### Markdown-Dokumentations-Policy (KRITISCH)
-- Alle Dokumentations-Dateien mit Endung `.md` MÜSSEN unter `docs/` liegen.
-- Erlaubte Ausnahmen:
-  - `README.md` im Repository-Root (Projekt-Overview)
-  - `frontend/README.md` und `backend/README.md` (nur falls unbedingt nötig; bevorzugt Inhalte in `docs/` konsolidieren)
-- Nicht erlaubt:
-  - Markdown-Dokumente außerhalb von `docs/` (z. B. Roadmaps, API-Beschreibungen, Architektur-Notizen) – diese müssen nach `docs/` verschoben werden.
-- Vorgeschriebene Pfadkonventionen in `docs/`:
-  - Globale Dokumente: `docs/README.md`, `docs/CHANGELOG.md`, `docs/DOCUMENTATION_OVERVIEW.md`, `docs/INTERDEPENDENCY.md`, `docs/IMPROVEMENTS_ROADMAP.md`
-  - Modul-Dokumente: `docs/modules/[module]/README.md`, `docs/modules/[module]/API.md`, `docs/modules/[module]/CHANGELOG.md`
-  - Architektur: `docs/architecture/overview.md`, `docs/architecture/module-guidelines.md`
-- PR/Review-Regel: PRs mit `.md`-Dateien außerhalb von `docs/` (außer den oben genannten Ausnahmen) werden abgelehnt – Dateien müssen in die korrekte `docs/`-Struktur verschoben werden.
-- Bei Verschiebungen von `.md` in `docs/` sind alle internen Links zu aktualisieren.
-
-### PR/Review-Gates für DataSources/Integrations (KRITISCH)
-- Jeder PR, der DataSources/Integrations ändert (z. B. neue Quelle, externe API, .env-Variablen, Sync-Mechanismen), MUSS folgende Dokumente aktualisieren – andernfalls wird der PR abgelehnt:
-  - `docs/INTERDEPENDENCY.md` (DataSources-Dependencies, Environment-Dependencies, External-API-Dependencies, Sync-Dependencies, Cross-DataSource-Logic, Frontend-API-Bindings, Source-Typen manual/external)
-  - `docs/DOCUMENTATION_OVERVIEW.md` (Integration-Architektur und Dokumentationsstruktur)
-  - `docs/CHANGELOG.md` (versionierte Änderung an Integrationen)
-  - Falls von einem Modul konsumiert: `docs/modules/[module]/README.md` (Nutzung/Abhängigkeiten) und `docs/modules/[module]/API.md` (genutzte Endpunkte, z. B. `/api/data/*`)
-  - Falls AI/RAG betroffen: `docs/RAG_DATA_SOURCES.md` (Quelle, Umfang, PII-Richtlinien)
-  - Falls Security/PII betroffen: `docs/AI_SECURITY_POLICY.md` (Scopes, Token-Flows, PII in Logs unterbinden)
-  - Falls Logging-Flüsse betroffen: `docs/LOGGING_STRATEGY.md` (Events, reqId, Retention)
-
-### PR/Review-Gates für Frontend Theme & Layout-Konfiguration (KRITISCH)
-- Jede Änderung an Frontend-Theme-Parametern (z. B. Farben, Branding, Layout-Variablen) MUSS folgende Updates enthalten:
-  - `frontend/.env` (oder entsprechende ENV-Datei) aktualisieren: Neue/angepasste `VITE_*` Variablen für Theme/Branding
-  - `docs/INTERDEPENDENCY.md`: Abschnitt "Frontend-Theme/Branding" erweitern/aktualisieren (Environment-Dependencies, betroffene Komponenten wie `Header`, `Sidebar`, CSS-Variables)
-  - `docs/DOCUMENTATION_OVERVIEW.md`: Dokumentationsstatus und ENV-Beispiel erweitern (Theme-Variablen auflisten)
-  - `docs/CHANGELOG.md`: Versionierte UI/UX-Änderungen dokumentieren
-  - Konsistenz prüfen: CSS-Custom-Properties (`--*`) in globalen Styles referenzieren; keine Hardcodes in Komponenten
-
-### Jedes neue Modul MUSS dokumentiert werden (Pflicht)
-```
-docs/modules/[module-name]/
-├── README.md           # Vollständige Modul-Dokumentation
-├── API.md             # Detaillierte API-Dokumentation
-└── CHANGELOG.md       # Versionierung und Änderungen
-```
-
-- Für JEDE Änderung an Endpunkten, Routen oder Strukturen des Moduls: `docs/modules/[module]/API.md` sofort aktualisieren (inkl. Request/Response-Beispiele, Statuscodes, Auth-Requirements)
-- Für JEDE neue Funktion/Feature im Modul: `docs/modules/[module]/README.md` um Funktionsbeschreibung, Sicherheit, Abhängigkeiten und Limitierungen erweitern
-- Für JEDE produktive Änderung: `docs/modules/[module]/CHANGELOG.md` um Version/Datum/Änderung ergänzen
-- Globale Übersichten IMMER aktualisieren: `docs/DOCUMENTATION_OVERVIEW.md`, `docs/INTERDEPENDENCY.md`, `docs/CHANGELOG.md` (siehe Wartungspflichten)
-
-## Dokumentations-Wartung (KRITISCH)
-
-### Bei JEDER Änderung in docs/ - UPDATE PFLICHT:
-
-#### 1. DOCUMENTATION_OVERVIEW.md aktualisieren:
+#### 3. Frontend Permission-Guards (PFLICHT):
 ```typescript
-// Bei neuen Dokumenten in docs/:
-// ✅ Dokumentationsstruktur-Tree erweitern
-// ✅ Neue Datei in entsprechender Sektion beschreiben
-// ✅ Umfang (Zeilen) und Abdeckung dokumentieren
-// ✅ Wichtigkeit und Nutzung angeben
+import { useUserPermissions } from '../../../hooks/useUserPermissions';
 
-// Bei Änderungen an bestehenden Docs:
-// ✅ Umfang (Zeilen) aktualisieren
-// ✅ Abdeckung um neue Inhalte erweitern
-// ✅ Status bei Fertigstellung anpassen
+const [Page]Page: React.FC = () => {
+  const { hasPageAccess, hasPageAction } = useUserPermissions();
+  
+  if (!hasPageAccess('[module]', '[page]')) {
+    return (
+      <div className="error-state">
+        <h2>🚫 Zugriff verweigert</h2>
+        <p>Sie haben keine Berechtigung für diese Seite.</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="[module]-page">
+      {hasPageAction('[module]', '[page]', 'create') && (
+        <button className="btn btn-primary">Neu erstellen</button>
+      )}
+    </div>
+  );
+};
 ```
 
-#### 2. INTERDEPENDENCY.md aktualisieren bei:
-```typescript
-// Backend-Änderungen:
-// ✅ Neue Module → Backend-Module-Dependencies erweitern
-// ✅ Neue Auth-Mechanismen → Authentifizierung-Sektion updaten
-// ✅ Neue API-Patterns → API-Integration-Standards erweitern
-// ✅ Neue orchestrator/types → Template-Referenzen aktualisieren
+### User/Permission Integration Checkliste:
 
-// Frontend-Änderungen:
-// ✅ Neue Module → Frontend-Module-Dependencies erweitern
-// ✅ Neue Layout-Komponenten → Layout-System-Sektion updaten
-// ✅ Neue CSS-Klassen → CSS-Klassen-System erweitern
-// ✅ Neue Router-Patterns → Router-Integration-Standards updaten
+#### Backend (PFLICHT):
+1. ✅ Module-Definition in `hierarchyAnalyzer.ts` hinzufügen  
+2. ✅ Permission-Checks in alle `orchestrator.ts` Handler einbauen  
+3. ✅ Tests für Permission-Scenarios schreiben
 
-// DataSources/Integrations-Änderungen (KRITISCH):
-// ✅ Neue DataSources → DataSources-Dependencies-Sektion erweitern
-// ✅ .env Variablen → Environment-Dependencies dokumentieren
-// ✅ Externe APIs (z. B. Microsoft Graph) → External-API-Dependencies hinzufügen
-// ✅ Sync-Mechanismen → Sync-Dependencies dokumentieren (Trigger, Intervalle, Startbedingungen)
-// ✅ Cross-DataSource Dependencies → Combined-Logic dokumentieren
-// ✅ Frontend-DataSource-Bindings → Frontend-API-Dependencies updaten
-// ✅ Source-Typen (manual/external) → Source-Type-Dependencies dokumentieren
+#### Frontend (PFLICHT):
+1. ✅ `useUserPermissions` Hook in alle Pages integrieren  
+2. ✅ Permission-Guards für Page-Access implementieren  
+3. ✅ Feature-Guards für Actions implementieren  
+4. ✅ Error-States für Permission-Denied-Scenarios
 
-// Shared Dependencies:
-// ✅ Neue Auth-Logik → Kritische Abhängigkeiten erweitern
-// ✅ Neue API-Calls → API-Pattern-Dokumentation updaten
-// ✅ Breaking Changes → Breaking Change Prevention Liste erweitern
-// ✅ Neue Integration-Guidelines hinzufügen
-```
+### NICHT ERLAUBT (User/Permissions):
+❌ Neue Module ohne Permission-System-Integration  
+❌ Frontend-Pages ohne Permission-Guards  
+❌ Backend-APIs ohne hierarchische Permission-Checks  
+❌ Module-Definitionen nicht in `hierarchyAnalyzer.ts` hinzugefügt  
+❌ Features ohne Action-Level-Permission-Checks  
+❌ Permission-System umgehen oder auf alte Auth zurückgreifen
 
-### AUTOMATISCHE DOKUMENTATIONS-UPDATES:
+---
+## 🗂️ DATASOURCES & INTEGRATIONS
 
-#### Bei neuen Backend-Modulen:
-```bash
-# PFLICHT-Updates:
-1. ✅ docs/modules/[module]/README.md erstellen
-2. ✅ docs/modules/[module]/API.md erstellen  
-3. ✅ docs/modules/[module]/CHANGELOG.md erstellen
-4. ✅ docs/DOCUMENTATION_OVERVIEW.md - Modul-Sektion hinzufügen
-5. ✅ docs/INTERDEPENDENCY.md - Backend-Dependencies erweitern
-6. ✅ docs/README.md - Module-Liste und Metriken aktualisieren
-7. ✅ docs/CHANGELOG.md - Version und Features hinzufügen
-```
+### DataSources Consumption (KRITISCH)
+**Für JEDES Modul, das Daten aus `backend/src/datasources/` nutzt:**
 
-#### Bei neuen Frontend-Modulen:
-```bash
-# PFLICHT-Updates:
-1. ✅ docs/modules/[module]/README.md um Frontend-Sektion erweitern
-2. ✅ docs/DOCUMENTATION_OVERVIEW.md - Frontend-Inhalte hinzufügen
-3. ✅ docs/INTERDEPENDENCY.md - Frontend-Dependencies erweitern
-4. ✅ docs/README.md - Frontend-Features aktualisieren
-5. ✅ docs/CHANGELOG.md - UI/UX Änderungen dokumentieren
-```
+#### Grundsätze:
+- **Lesen**: Kombinierte Quelle (entra + manual) via `entraac/combined.ts`
+- **Schreiben**: Ausschließlich in manuelle Quelle (`manual`). `entra` ist read-only
+- **Import**: `import { getCombinedUsers, findCombinedUsers, createManualUser } from '../../datasources';`
 
-#### Bei neuen DataSources/Integrations (KRITISCH):
-```bash
-# SOFORT-Updates:
-1. ✅ docs/INTERDEPENDENCY.md - DataSources-Dependencies-Sektion erweitern
-2. ✅ docs/INTERDEPENDENCY.md - Environment-Variables (.env) dokumentieren
-3. ✅ docs/INTERDEPENDENCY.md - External-API-Dependencies hinzufügen
-4. ✅ docs/INTERDEPENDENCY.md - Frontend-API-Bindings dokumentieren
-5. ✅ docs/DOCUMENTATION_OVERVIEW.md - Integration-Architektur erweitern
-6. ✅ docs/CHANGELOG.md - Integration-Changes dokumentieren
-7. ✅ docs/README.md - Neue Capabilities hinzufügen
-```
+#### Mapping-Standard:
+- `displayName` → `firstName`/`lastName`
+- `mail`/`userPrincipalName` → `email`
+- `jobTitle` → `position`
+- `department` → `department`
+
+#### NICHT ERLAUBT:
+❌ Direkte externe API-Calls (Graph) aus Modulen  
+❌ Schreiben in `entra`  
+❌ Umgehen der zentralen DataSources-Re-Exports
+
+### AI/RAG Integration Rules
+**Bei `backend/src/modules/ai/**` Änderungen:**
+- ✅ `docs/modules/ai/API.md` für Endpunkte `/api/ai/chat`, `/api/ai/rag/*` aktualisieren
+- ✅ Required ENV: `OPENAI_API_KEY`, `GEMINI_API_KEY`, `OLLAMA_URL`, `RAG_INDEX_PATH`
+
+---
+
+## 📚 DOKUMENTATION & WARTUNG
+
+### Dokumentations-Policy (KRITISCH)
+- ✅ Alle `.md`-Dateien MÜSSEN unter `docs/` liegen
+- ✅ Erlaubte Ausnahmen: `README.md` (root), `backend/README.md`, `frontend/README.md`
+- ✅ Pfadkonventionen:
+  - Global: `docs/CHANGELOG.md`, `docs/INTERDEPENDENCY.md`
+  - Module: `docs/modules/[module]/README.md`, `docs/modules/[module]/API.md`
+  - Architektur: `docs/architecture/overview.md`
+
+### Automatische Updates (PFLICHT)
+
+#### Bei neuen Modulen:
+1. ✅ `docs/modules/[module]/README.md` erstellen  
+2. ✅ `docs/modules/[module]/API.md` erstellen  
+3. ✅ `docs/modules/[module]/CHANGELOG.md` erstellen  
+4. ✅ `docs/DOCUMENTATION_OVERVIEW.md` aktualisieren  
+5. ✅ `docs/INTERDEPENDENCY.md` um Dependencies erweitern  
+6. ✅ `docs/CHANGELOG.md` Version hinzufügen
+
+#### Bei DataSources/Integrations (KRITISCH):
+1. ✅ `docs/INTERDEPENDENCY.md` - DataSources-Dependencies erweitern  
+2. ✅ `docs/INTERDEPENDENCY.md` - Environment-Variables dokumentieren  
+3. ✅ `docs/INTERDEPENDENCY.md` - External-API-Dependencies hinzufügen  
+4. ✅ `docs/DOCUMENTATION_OVERVIEW.md` - Integration-Architektur erweitern
 
 #### Bei API-Änderungen:
-```bash
-# SOFORT-Updates:
-1. ✅ docs/modules/[module]/API.md - Endpunkt-Dokumentation aktualisieren
-2. ✅ docs/INTERDEPENDENCY.md - API-Integration-Standards anpassen
-3. ✅ docs/modules/[module]/CHANGELOG.md - API-Changes dokumentieren
-4. ✅ docs/CHANGELOG.md - Breaking Changes dokumentieren (falls vorhanden)
-```
+1. ✅ `docs/modules/[module]/API.md` - Endpunkt-Dokumentation aktualisieren  
+2. ✅ `docs/modules/[module]/CHANGELOG.md` - API-Changes dokumentieren
 
-#### Bei Architektur-Änderungen:
-```bash
-# KRITISCHE Updates:
-1. ✅ docs/INTERDEPENDENCY.md - Vollständige Dependency-Review
-2. ✅ docs/architecture/overview.md - System-Architektur aktualisieren
-3. ✅ docs/architecture/module-guidelines.md - Guidelines anpassen
-4. ✅ docs/DOCUMENTATION_OVERVIEW.md - Architektur-Sektion updaten
-5. ✅ .cursorrules - Standards bei Breaking Changes anpassen
-```
+#### Bei Frontend Theme-Änderungen:
+1. ✅ `frontend/.env` - Neue `VITE_*` Variablen hinzufügen  
+2. ✅ `docs/INTERDEPENDENCY.md` - Frontend-Theme-Dependencies erweitern
 
-### Dokumentations-Inhalte:
-1. **README.md:**
-   - Modul-Übersicht mit Zweck und Status
-   - Implementierte Funktionen
-   - Technische Implementation
-   - Sicherheit & Berechtigungen
-   - Performance-Metriken
-   - Bekannte Limitierungen
-   - Roadmap & Entwicklungsplan
+### Documentation Gates (KRITISCH)
+**Jede Änderung in `backend/src/datasources/**` oder `backend/src/modules/**` (APIs/Routes) MUSS folgende Dokumente aktualisieren:**
+- `docs/INTERDEPENDENCY.md`
+- `docs/DOCUMENTATION_OVERVIEW.md`
+- `docs/CHANGELOG.md`
+- `docs/modules/[module]/API.md` (bei Endpoint-Änderungen)
+- `docs/modules/[module]/README.md` (bei Behavior-Änderungen)
 
-2. **API.md:**
-   - Alle API-Endpunkte dokumentiert
-   - Request/Response-Beispiele
-   - Error-Handling-Szenarien
-   - PowerShell-Test-Beispiele
-   - Authentifizierungs-Requirements
+---
+## 🧹 MODUL LIFECYCLE
 
-3. **CHANGELOG.md:**
-   - Versionierte Änderungshistorie
-   - Was hinzugefügt/geändert/entfernt wurde
-   - Technische Details zu Updates
-   - Geplante Verbesserungen
+### Bei JEDEM neuen Modul (Checkliste):
+1. ✅ Backend-Ordnerstruktur nach Standard erstellen  
+2. ✅ Frontend-Ordnerstruktur nach Standard erstellen  
+3. ✅ Backend in `app.ts` registrieren  
+4. ✅ Frontend-Route in `App.tsx` registrieren  
+5. ✅ Sidebar-Navigation hinzufügen  
+6. ✅ Dashboard-Kachel erstellen  
+7. ✅ Permission-System integrieren  
+8. ✅ Vollständige Dokumentation erstellen  
+9. ✅ PowerShell-Tests erweitern
 
-### Dokumentations-Updates:
-- Bei JEDEM neuen Feature: Dokumentation aktualisieren
-- Bei API-Änderungen: API.md sofort updaten
-- Bei Breaking Changes: CHANGELOG.md ausführlich dokumentieren
-- Haupt-README.md bei neuen Modulen erweitern
+### Modul-Entfernung (KRITISCH):
+**ALLE Abhängigkeiten MÜSSEN systematisch entfernt werden:**
 
-## Testing
-- Test-Funktionen in orchestrator für jedes Modul
-- PowerShell-Test-Scripts erstellen
-- Mock-Daten für Entwicklung bereitstellen
+#### Backend-Entfernung:
+1. ✅ `backend/src/modules/[module]/` - Ordner löschen  
+2. ✅ `backend/src/app.ts` - Import und Routes entfernen  
+3. ✅ `/api/hello` endpoint aktualisieren
 
-## NICHT ERLAUBT:
-❌ Module ohne orchestrator.ts
-❌ Module ohne types.ts  
-❌ Geschäftslogik direkt in orchestrator.ts
-❌ Fehlende Error-Handling
-❌ Untypisierte API-Responses
-❌ Module ohne Authentifizierung
-❌ Direkte Datenbankzugriffe ohne Abstraktionsschicht
-❌ Module, die nicht in index.ts registriert sind
-❌ Module ohne Dokumentation in docs/modules/
-❌ API-Änderungen ohne Dokumentations-Update
-❌ Neue Module ohne DOCUMENTATION_OVERVIEW.md Update
-❌ Abhängigkeits-Änderungen ohne INTERDEPENDENCY.md Update
-❌ Frontend-Module ohne Frontend-Dokumentation in bestehenden docs/modules/
-❌ Neue Features ohne docs/CHANGELOG.md Eintrag
-❌ Breaking Changes ohne ausführliche Dokumentation
-❌ DataSources/Integrations ohne INTERDEPENDENCY.md Dependencies-Update
-❌ .env Änderungen ohne Environment-Dependencies-Dokumentation
-❌ Externe API-Integrationen ohne External-API-Dependencies-Dokumentation
+#### Frontend-Entfernung:
+1. ✅ `frontend/src/modules/[module]/` - Ordner löschen  
+2. ✅ `frontend/src/App.tsx` - Route entfernen  
+3. ✅ `frontend/src/layouts/components/Sidebar.tsx` - Navigation entfernen  
+4. ✅ `frontend/src/components/Dashboard.tsx` - Kachel entfernen
 
-## Module ↔ DataSources Consumption (KRITISCH)
+#### Dokumentations-Entfernung:
+1. ✅ `docs/modules/[module]/` - Ordner löschen  
+2. ✅ `docs/DOCUMENTATION_OVERVIEW.md` - Referenzen entfernen  
+3. ✅ `docs/INTERDEPENDENCY.md` - Dependencies entfernen  
+4. ✅ `docs/CHANGELOG.md` - Entfernung dokumentieren
 
-Diese Regeln gelten für JEDES Modul, das Daten aus `backend/src/datasources/` liest oder schreibt.
+---
+## ⚙️ TECHNICAL STANDARDS
 
-### Grundsätze
-- **Lesen:** Standard ist die kombinierte Quelle (entra + manual) via `entraac/combined.ts`.
-  - Verwende ausschließlich zentrale Re-Exports: `import { getCombinedUsers, findCombinedUsers, getCombinedStats, createManualUser, updateManualUser, deleteManualUser } from '../../datasources';`
-  - Kein direkter Zugriff auf externe APIs (z. B. Microsoft Graph) aus Modulen.
-- **Schreiben:** Ausschließlich in die manuelle Quelle (`manual`). `entra` ist strikt read-only.
-- **Mapping-Standard (Combined → Modul-Entity):**
-  - `displayName` → `firstName`/`lastName`
-  - `mail`/`userPrincipalName` → `email`
-  - `jobTitle` → `position`
-  - `department` → `department`
-  - `accountEnabled` → `status` (active/inactive/pending)
-- **Audit & Security:**
-  - `logAuthEvent(userId, action, resource)` in Orchestrator-Handlern verwenden
-  - `requireAuth`/`requirePermission` strikt einsetzen
-  - Keine PII in Logs
+### Dependency Hygiene
+- ✅ Backend: `@types/*` packages in `devDependencies` only
+- ✅ Frontend: `react-router-dom` v6.x (nicht v7 ohne Migration)
+- ✅ Remove unused packages; add missing ones
 
-### Pflichten bei Modul↔DataSources-Verknüpfung (PR/Review-Checklist)
-1. Code-Integration
-   - [ ] Nur zentrale Re-Exports aus `backend/src/datasources/index.ts` importiert
-   - [ ] Lesezugriffe über `getCombinedUsers`/`findCombinedUsers`
-   - [ ] Schreibzugriffe nur über `createManualUser`/`updateManualUser`/`deleteManualUser`
-   - [ ] Einheitliches Mapping auf Modul-Entities implementiert
-   - [ ] Vollständiges Error-Handling (engl. Error-Typ, dt. User-Message)
-   - [ ] `createdBy`/`updatedBy` beim Schreiben gesetzt (wenn verfügbar)
-2. Dokumentation (PFLICHT)
-   - [ ] `docs/INTERDEPENDENCY.md`: Modul-spezifische Bindings ergänzt (lesen=combined, schreiben=manual, Stats, Mapping)
-   - [ ] `docs/modules/[module]/README.md`: DataSources-Integration beschrieben
-   - [ ] `docs/modules/[module]/API.md`: Endpunkt-Semantik (combined/manual) dokumentiert
-   - [ ] `docs/CHANGELOG.md`: Unveröffentlicht → „Docs/Integrations“ Eintrag
-   - [ ] `docs/DOCUMENTATION_OVERVIEW.md`: Umfang/Abdeckung aktualisiert
-3. API/Contracts
-   - [ ] Keine Breaking Changes ohne Changelog + Doc-Updates
-   - [ ] Response-Typen im Modul `types.ts` konsistent mit Mapping
-4. Tests
-   - [ ] PowerShell-Tests für read (combined) und write (manual)
-   - [ ] Error-Szenarien (Forbidden für `entra`-Writes) abgedeckt
+### PowerShell Kompatibilität  
+- ✅ Bevorzuge `;` statt `&&` in npm scripts
+- ✅ Erstelle `.ps1` Scripts für Module-spezifische Tasks
+- ✅ PowerShell-freundliche Pfade verwenden
 
-### Nicht erlaubt (Hard-Fails)
-- ❌ Direkte externe API-Calls (Graph) aus Modulen
-- ❌ Schreiben in `entra`
-- ❌ Umgehen der zentralen DataSources-Re-Exports
-- ❌ Abweichende Mapping-Keys ohne Dokumentation/Types-Update
-- ❌ Verknüpfungen ohne Doku-Updates gemäß Pflichtliste
+### Testing Standards
+- ✅ Test-Funktionen in orchestrator für jedes Modul
+- ✅ PowerShell-Test-Scripts erstellen  
+- ✅ Mock-Daten für Entwicklung bereitstellen
+
+---
+**Wichtig**: Diese Regeln gewährleisten Konsistenz, Wartbarkeit und Skalierbarkeit der CompanyAI-Architektur. Alle neuen Module MÜSSEN das hierarchische Permission-System ab v2.1.0 nutzen.
+
+
+
+
+
 
 ## Bei JEDEM neuen Modul:
 1. ✅ Ordnerstruktur nach Standard erstellen
@@ -872,5 +876,250 @@ Wenn ein Modul entfernt oder gelöscht werden soll, MÜSSEN ALLE Abhängigkeiten
 ❌ Tests die auf gelöschte Module verweisen
 
 **Wichtig**: Eine Modul-Entfernung ist ein Breaking Change und MUSS ausführlich in docs/CHANGELOG.md dokumentiert werden, inklusive Begründung und Auswirkungen auf andere Module.
+
+## Hierarchical Permissions Integration (KRITISCH - NEU v2.1.0)
+
+Bei JEDEM neuen Modul MUSS die Integration in das hierarchische Permission-System berücksichtigt werden:
+
+### Modul-Permission-Definition (PFLICHT):
+```bash
+1. ✅ Modul-Schlüssel definieren (z.B. "analytics", "reporting", "inventory")
+2. ✅ Page-Definitionen mit Actions erstellen:
+   - Page-Keys: beschreibende Namen (z.B. "reports", "dashboards", "export")
+   - Actions: view, create, edit, delete, export, import, etc.
+   - Limits (optional): dailyQuota, maxRecords, etc.
+3. ✅ Modul-spezifische Permission-Logik implementieren
+4. ✅ Backend-Permission-Checks in orchestrator.ts-Handlern
+5. ✅ Frontend-Permission-Guards für Pages und Features
+```
+
+### Backend-Integration mit Permission-System:
+```typescript
+// orchestrator.ts - IMMER Permission-Checks einbauen
+import { AuthenticatedRequest, requirePermission } from '../hr/core/auth';
+
+export class [Module]Orchestrator {
+  static async handle[Action](req: AuthenticatedRequest, res: Response) {
+    // Permission-Check für hierarchisches System
+    const hasPermission = await checkHierarchicalPermission(
+      req.user.id, 
+      '[module]', 
+      '[page]', 
+      '[action]'
+    );
+    
+    if (!hasPermission) {
+      return res.status(403).json({
+        success: false,
+        error: 'PermissionDenied',
+        message: 'Keine Berechtigung für diese Aktion'
+      });
+    }
+    
+    // Rest der Handler-Logik...
+  }
+}
+```
+
+### Frontend-Permission-Guards:
+```typescript
+// pages/[Page]Page.tsx - Permission-Guards implementieren
+import { useUserPermissions } from '../../../hooks/useUserPermissions';
+
+const [Page]Page: React.FC = () => {
+  const { hasPageAccess, hasPageAction } = useUserPermissions();
+  
+  // Page-Level Guard
+  if (!hasPageAccess('[module]', '[page]')) {
+    return (
+      <div className="error-state">
+        <h2>🚫 Zugriff verweigert</h2>
+        <p>Sie haben keine Berechtigung für diese Seite.</p>
+      </div>
+    );
+  }
+  
+  // Feature-Level Guards im JSX
+  return (
+    <div className="[module]-page">
+      {/* Conditional Features basierend auf Permissions */}
+      {hasPageAction('[module]', '[page]', 'create') && (
+        <button className="btn btn-primary">Neu erstellen</button>
+      )}
+      {hasPageAction('[module]', '[page]', 'export') && (
+        <button className="btn btn-secondary">Exportieren</button>
+      )}
+    </div>
+  );
+};
+```
+
+### hierarchyAnalyzer.ts erweitern (Backend):
+```typescript
+// Neue Module müssen in die Modul-Definitionen eingepflegt werden
+export const MODULE_DEFINITIONS = [
+  {
+    key: "hr",
+    name: "HR", 
+    icon: "👥",
+    pages: [...]
+  },
+  {
+    key: "[new-module]",
+    name: "[Module Display Name]",
+    icon: "[Icon]",
+    pages: [
+      {
+        key: "[page1]",
+        name: "[Page Display Name]",
+        icon: "[Page Icon]",
+        actions: [
+          { key: "view", name: "Anzeigen", description: "..." },
+          { key: "create", name: "Erstellen", description: "..." },
+          { key: "edit", name: "Bearbeiten", description: "..." },
+          { key: "delete", name: "Löschen", description: "..." }
+        ],
+        limits: [ // Optional
+          { key: "dailyQuota", name: "Tägliche Anfragen", type: "number", defaultValue: 100 }
+        ]
+      }
+    ]
+  }
+];
+```
+
+### Permission-System-Integration-Checkliste (PFLICHT):
+
+#### Bei JEDEM neuen Backend-Modul:
+```bash
+1. ✅ Module-Definition in hierarchyAnalyzer.ts hinzufügen (Modul + Pages + Actions)
+2. ✅ Permission-Checks in alle orchestrator.ts Handler einbauen
+3. ✅ Modul-spezifische Permission-Logic implementieren (falls nötig)
+4. ✅ API-Endpunkte für Permission-Management erweitern (falls nötig)
+5. ✅ Tests für Permission-Scenarios schreiben
+```
+
+#### Bei JEDEM neuen Frontend-Modul:
+```bash
+1. ✅ useUserPermissions Hook in alle Pages integrieren
+2. ✅ Permission-Guards für Page-Access implementieren
+3. ✅ Feature-Guards für Actions implementieren (Create/Edit/Delete buttons)
+4. ✅ Conditional UI basierend auf User-Permissions
+5. ✅ Error-States für Permission-Denied-Scenarios
+6. ✅ Loading-States während Permission-Checks
+```
+
+#### Dokumentations-Updates (KRITISCH):
+```bash
+1. ✅ docs/modules/[module]/README.md - Permission-Sektion hinzufügen:
+   - Welche Permissions das Modul nutzt
+   - Hierarchische Integration (Department/SubGroup/Individual)
+   - Permission-Dependencies zu anderen Modulen
+2. ✅ docs/modules/[module]/API.md - Permission-Requirements dokumentieren:
+   - Welche Permission für welchen Endpoint erforderlich
+   - Hierarchische Permission-Checks beschreiben
+   - Error-Responses bei Permission-Denied
+3. ✅ docs/INTERDEPENDENCY.md - Permission-Dependencies ergänzen:
+   - Modul-spezifische Permission-Integration
+   - Cross-Module-Permission-Dependencies
+   - Hierarchical Permission System Integration
+4. ✅ docs/DOCUMENTATION_OVERVIEW.md - Permission-Dokumentation erweitern
+5. ✅ docs/CHANGELOG.md - Neue Permission-Integration dokumentieren
+```
+
+### NICHT ERLAUBT (Hard-Fails):
+❌ Neue Module ohne Permission-System-Integration
+❌ Frontend-Pages ohne Permission-Guards  
+❌ Backend-APIs ohne hierarchische Permission-Checks
+❌ Module-Definitionen nicht in hierarchyAnalyzer.ts hinzugefügt
+❌ Permission-Integration ohne Dokumentations-Update
+❌ Features ohne Action-Level-Permission-Checks
+❌ Permission-System umgehen oder direkt auf alte Auth zurückgreifen
+❌ Neue Module ohne Permission-Test-Scenarios
+
+### Beispiel-Integration neues "Analytics"-Modul:
+
+#### 1. Backend hierarchyAnalyzer.ts erweitern:
+```typescript
+{
+  key: "analytics",
+  name: "Analytics", 
+  icon: "📊",
+  pages: [
+    {
+      key: "reports",
+      name: "Berichte",
+      icon: "📈",
+      actions: [
+        { key: "view", name: "Anzeigen", description: "Berichte anzeigen" },
+        { key: "create", name: "Erstellen", description: "Neue Berichte erstellen" },
+        { key: "export", name: "Exportieren", description: "Berichte exportieren" },
+        { key: "delete", name: "Löschen", description: "Berichte löschen" }
+      ],
+      limits: [
+        { key: "monthlyReports", name: "Berichte pro Monat", type: "number", defaultValue: 10 }
+      ]
+    }
+  ]
+}
+```
+
+#### 2. Backend orchestrator.ts mit Permission-Checks:
+```typescript
+static async handleGetReports(req: AuthenticatedRequest, res: Response) {
+  const hasPermission = await checkHierarchicalPermission(
+    req.user.id, 'analytics', 'reports', 'view'
+  );
+  
+  if (!hasPermission) {
+    return res.status(403).json({
+      success: false,
+      error: 'PermissionDenied',
+      message: 'Keine Berechtigung um Analytics-Berichte zu sehen'
+    });
+  }
+  
+  // Rest der Logic...
+}
+```
+
+#### 3. Frontend Permission-Guards:
+```typescript
+const ReportsPage: React.FC = () => {
+  const { hasPageAccess, hasPageAction } = useUserPermissions();
+  
+  if (!hasPageAccess('analytics', 'reports')) {
+    return <PermissionDenied />;
+  }
+  
+  return (
+    <div className="analytics-page">
+      <div className="page-actions">
+        {hasPageAction('analytics', 'reports', 'create') && (
+          <button>Neuen Bericht erstellen</button>
+        )}
+        {hasPageAction('analytics', 'reports', 'export') && (
+          <button>Exportieren</button>
+        )}
+      </div>
+    </div>
+  );
+};
+```
+
+### Migration bestehender Module:
+
+Bestehende Module MÜSSEN schrittweise in das hierarchische Permission-System integriert werden:
+
+```bash
+1. ✅ Modul-Definition hinzufügen (hierarchyAnalyzer.ts)
+2. ✅ Permission-Checks schrittweise in Backend einbauen
+3. ✅ Frontend-Guards schrittweise hinzufügen  
+4. ✅ Dokumentation aktualisieren
+5. ✅ Tests erweitern
+6. ✅ Migration in CHANGELOG.md dokumentieren
+```
+
+**Wichtig**: Das hierarchische Permission-System ist ab v2.1.0 der neue Standard. Alle neuen Module MÜSSEN dieses System von Anfang an nutzen. Bestehende Module müssen sukzessive migriert werden.
 
 Diese Regeln gewährleisten Konsistenz, Wartbarkeit und Skalierbarkeit der CompanyAI-Architektur.

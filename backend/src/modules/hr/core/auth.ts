@@ -12,11 +12,12 @@ export interface User {
 
 export interface Permission {
   action: 'read' | 'write' | 'delete' | 'admin';
-  resource: 'employee_data' | 'reports' | 'onboarding' | 'support' | 'tickets' | 'ai' | 'admin_users' | 'system_settings' | 'audit_logs' | 'system_stats' | 'audit_stats' | 'all';
+  resource: 'employee_data' | 'reports' | 'onboarding' | 'support' | 'tickets' | 'ai' | 'admin_users' | 'system_settings' | 'audit_logs' | 'system_stats' | 'audit_stats' | 'roles' | 'groups' | 'tokens' | 'audit' | 'hr_documents' | 'hr_storage_stats' | 'database_info' | 'database_schema' | 'database_clear' | 'all';
 }
 
 export interface AuthenticatedRequest extends Request {
   user?: User;
+  reqId?: string;
 }
 
 // Mock-Benutzerdaten für Entwicklung
@@ -158,10 +159,11 @@ export function logAuthEvent(
   userId: string, 
   action: string, 
   resource?: string, 
+  reqId?: string,
   success: boolean = true
 ) {
   const timestamp = new Date().toISOString();
-  const logMessage = `[${timestamp}] User ${userId}: ${action}${resource ? ` on ${resource}` : ''} - ${success ? 'SUCCESS' : 'FAILED'}`;
+  const logMessage = `[${timestamp}] User ${userId}: ${action}${resource ? ` on ${resource}` : ''}${reqId ? ` (reqId: ${reqId})` : ''} - ${success ? 'SUCCESS' : 'FAILED'}`;
   
   console.log(logMessage);
   

@@ -2,7 +2,7 @@
 // Zentrale API-Konfiguration für alle Frontend-Komponenten
 
 // Environment Variable laden
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5005';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:5005';
 
 // API Endpoints konfigurieren
 export const API_CONFIG = {
@@ -79,7 +79,7 @@ export const apiPut = async (url: string, data: any): Promise<any> => {
 // Debug: API-Konfiguration ausgeben
 console.log('🔗 API Configuration loaded:', {
   BASE_URL: API_BASE_URL,
-  ENV_VAR: import.meta.env.VITE_API_BASE_URL,
+  ENV_VAR: (import.meta as any).env?.VITE_API_BASE_URL,
   ENDPOINTS: Object.keys(API_CONFIG.ENDPOINTS).length
 });
 

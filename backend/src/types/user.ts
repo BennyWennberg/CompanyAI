@@ -26,7 +26,7 @@ export interface User {
   
   // System Information (REQUIRED)
   status: 'active' | 'inactive' | 'pending' | 'suspended';
-  source: 'azure-ad' | 'ldap' | 'manual' | 'bulk';
+  source: 'azure-ad' | 'ldap' | 'manual' | 'bulk' | 'demo';
   accountEnabled: boolean;
   
   // External Integration (OPTIONAL)
@@ -80,13 +80,13 @@ export interface Permission {
 
 export type PermissionResource = 
   | 'ai' | 'rag' | 'sessions' | 'users' | 'models' 
-  | 'analytics' | 'system' | 'files' | 'voice' | 'admin';
+  | 'analytics' | 'system' | 'files' | 'voice' | 'admin' | 'all';
 
 export type PermissionAction = 
   | 'create' | 'read' | 'update' | 'delete' | 'execute' | 'admin';
 
 export type PermissionScope = 
-  | 'own' | 'group' | 'all';
+  | 'own' | 'group' | 'all' | 'hr';
 
 export interface PermissionCondition {
   type: 'time' | 'quota' | 'model' | 'custom';

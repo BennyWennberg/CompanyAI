@@ -152,9 +152,9 @@ export async function fetchSystemStats(): Promise<APIResponse<SystemStats>> {
     let totalUsers = 0;
     let activeUsers = 0;
 
-    if (usersResult.success && usersResult.data) {
-      totalUsers = usersResult.data.length;
-      activeUsers = usersResult.data.filter(user => 
+    if (usersResult && Array.isArray(usersResult)) {
+      totalUsers = usersResult.length;
+      activeUsers = usersResult.filter(user => 
         user.accountEnabled !== false
       ).length;
     }

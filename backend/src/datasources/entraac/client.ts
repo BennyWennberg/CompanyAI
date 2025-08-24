@@ -85,7 +85,7 @@ export async function graphGetAllPages<T>(initialPath: string): Promise<T[]> {
 
   while (nextLink) {
     try {
-      const response = await graphGet<GraphResponse<T>>(nextLink);
+      const response: GraphResponse<T> = await graphGet<GraphResponse<T>>(nextLink);
       
       if (response.value) {
         results.push(...response.value);

@@ -547,8 +547,157 @@ $created = Invoke-RestMethod -Uri "http://localhost:5000/api/hr/employees" -Meth
 ### Vollständiger Test
 Nutzen Sie das bereitgestellte PowerShell-Script: `tools/test-modules.ps1`
 
+## 📊 Custom Fields Management (NEU)
+
+Das HR-Modul unterstützt jetzt benutzerdefinierte zusätzliche Informationen für Mitarbeiter.
+
+### 1. Custom Fields abrufen
+
+```http
+GET /api/hr/employees/:employeeId/custom-fields
+```
+
+**Berechtigungen:** `read:employee_data`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "cf_123",
+      "key": "Mitarbeiter-ID",
+      "value": "EMP-001",
+      "type": "text",
+      "category": "System",
+      "createdAt": "2024-12-18T10:30:00Z",
+      "createdBy": "admin@company.com",
+      "updatedAt": "2024-12-18T15:20:00Z",
+      "updatedBy": "hr.manager@company.com"
+    }
+  ],
+  "message": "2 Custom Fields für Mitarbeiter geladen"
+}
+```
+
+### 2. Custom Field erstellen
+
+```http
+POST /api/hr/custom-fields
+```
+
+**Berechtigungen:** `write:employee_data`
+
+**Request Body:**
+```json
+{
+  "employeeId": "emp_123",
+  "key": "Kostenstelle",
+  "value": "KS-001",
+  "type": "text",
+  "category": "Organisatorisch"
+}
+```
+
+**Field Types:**
+- `text`: Freier Text
+- `number`: Numerischer Wert
+- `date`: Datum (ISO-String)
+- `select`: Auswahl-Wert
+- `boolean`: Ja/Nein (true/false)
+
+**Standard-Kategorien:**
+- `System`: System-relevante Informationen
+- `Personal`: Persönliche Daten
+- `Organisatorisch`: Unternehmens-spezifische Daten
+- `Sonstiges`: Sonstige Informationen
+
+### 3. Custom Field aktualisieren
+
+```http
+PUT /api/hr/employees/:employeeId/custom-fields/:fieldId
+```
+
+**Berechtigungen:** `write:employee_data`
+
+**Request Body:**
+```json
+{
+  "value": "KS-002",
+  "type": "text",
+  "category": "Organisatorisch"
+}
+```
+
+### 4. Custom Field löschen
+
+```http
+DELETE /api/hr/employees/:employeeId/custom-fields/:fieldId
+```
+
+**Berechtigungen:** `write:employee_data`
+
+### 5. Kategorien abrufen
+
+```http
+GET /api/hr/custom-fields/categories
+```
+
+**Berechtigungen:** `read:employee_data`
+
+### 6. Field Templates abrufen
+
+```http
+GET /api/hr/custom-fields/templates
+```
+
+**Berechtigungen:** `read:employee_data`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "key": "Mitarbeiter-ID",
+      "type": "text",
+      "category": "System",
+      "value": ""
+    },
+    {
+      "key": "Jahresurlaub",
+      "type": "number",
+      "category": "System",
+      "value": "25"
+    }
+  ],
+  "message": "8 Field Templates verfügbar"
+}
+```
+
+### PowerShell Test-Beispiele (Custom Fields)
+
+```powershell
+# Custom Fields für Mitarbeiter abrufen
+$response = Invoke-RestMethod -Uri "http://localhost:5000/api/hr/employees/emp_123/custom-fields" -Headers @{Authorization="Bearer $token"}
+
+# Neues Custom Field erstellen
+$body = @{
+    employeeId = "emp_123"
+    key = "Kostenstelle"
+    value = "KS-001"
+    type = "text"
+    category = "Organisatorisch"
+} | ConvertTo-Json
+
+$response = Invoke-RestMethod -Uri "http://localhost:5000/api/hr/custom-fields" -Method POST -Body $body -ContentType "application/json" -Headers @{Authorization="Bearer $token"}
+
+# Templates abrufen
+$templates = Invoke-RestMethod -Uri "http://localhost:5000/api/hr/custom-fields/templates" -Headers @{Authorization="Bearer $token"}
+```
+
 ---
 
-**API-Version:** 2.0.0  
-**Letzte Aktualisierung:** 8. Dezember 2024  
-**Dokumentations-Status:** Vollständig
+**API-Version:** 2.1.0  
+**Letzte Aktualisierung:** 18. Dezember 2024  
+**Dokumentations-Status:** Vollständig (inkl. Custom Fields)

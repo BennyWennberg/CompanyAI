@@ -3,18 +3,49 @@
 Alle Änderungen am HR-Modul von CompanyAI werden hier dokumentiert.
 
 ## [Unveröffentlicht]
-### Geplant für v2.1
+### 🚨 BREAKING CHANGE - Schema-basierte Zusatzinformationen (v3.0)
+
+**Migration erforderlich:** Custom Fields System komplett durch Schema-basiertes System ersetzt.
+
+- ✅ **Neue 2-Ebenen-Architektur:** Global Schemas + Individual Values
+- ✅ **Field Schemas Management:** Globale Feldtyp-Definitionen für alle Mitarbeiter
+- ✅ **User Values Management:** User-spezifische Werte pro definiertem Schema
+- ✅ **Admin/User Workflow-Trennung:** 
+  - Admin: Schema-Manager über "📊 Zusätzliche Informationen" Button
+  - User: Values-Editor über "✏️ Bearbeiten" Button pro Mitarbeiter
+- ✅ **Verbesserte Field Types:** Units (€, Tage, %), Select-Options, Default Values
+- ✅ **Automatische Synchronisation:** Neue Schemas erscheinen automatisch bei allen Usern
+- ✅ **API komplett überarbeitet:** 8 neue Endpunkte für Schema/Values-Management
+
+**BREAKING CHANGES:**
+- `CustomFieldsModal` → `SchemaManagerModal` + `AdditionalInfoEditor`
+- 6 alte Custom Fields API-Endpunkte entfernt
+- `manageCustomFields.ts` → `manageFieldSchemas.ts` + `manageUserValues.ts`
+
+### ❌ Entfernt - Custom Fields System (v2.1)
+- ✅ **Custom Fields Backend:** Types, Functions, Orchestrator-Handler
+  - `CustomField` Interface mit ID, Key, Value, Type, Category, Timestamps
+  - `manageCustomFields.ts` mit CRUD-Operations und Templates
+  - 6 neue API-Endpunkte für Custom Fields Management
+- ✅ **Custom Fields Frontend:** Modal und Integration in alle HR-Seiten
+  - Button "📊 Zusätzliche Informationen" oben rechts in allen HR-Seiten
+  - CustomFieldsModal-Komponente mit Templates und Kategorien
+  - Integration in EmployeesPage, OnboardingPage, ReportsPage, StatsPage
+- ✅ **Field Types:** text, number, date, select, boolean mit Validierung
+- ✅ **Kategorien:** System, Personal, Organisatorisch, Sonstiges
+- ✅ **Templates:** 8 vordefinierte Field-Templates (Mitarbeiter-ID, Status, etc.)
+
+### Geplant für v2.2
 - [ ] Datenbank-Integration (PostgreSQL)
-- [ ] JWT-Token-Authentifizierung
-- [ ] File-Upload für Mitarbeiterdokumente
-- [ ] Email-Benachrichtigungen für Onboarding
-- [ ] Erweiterte Suchfunktionen
-- [ ] Bulk-Import/Export von Mitarbeiterdaten
-- [ ] Automatisierte Onboarding-Workflows
+- [ ] Custom Fields in Persistence speichern (aktuell In-Memory)
+- [ ] Advanced Field Validation und Custom Rules
+- [ ] Bulk-Import/Export von Custom Fields
+- [ ] Field-History und Änderungsverfolgung
 
 ### 🧩 Docs/Integrations
 - DataSources-Integration dokumentiert (lesen: combined, schreiben: manual)
 - README.md und API.md um DataSources-Semantik ergänzt
+- API.md um Custom Fields Endpunkte ergänzt (6 neue Endpunkte)
 
 ## [2.0.0] - 2024-12-08
 

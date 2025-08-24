@@ -24,7 +24,7 @@ export async function fetchAdminUsers(
     // Kombinierte User aus DataSources laden
     const combinedUsersResult = await getCombinedUsers();
     
-    if (!combinedUsersResult.success || !combinedUsersResult.data) {
+    if (!combinedUsersResult || !Array.isArray(combinedUsersResult)) {
       return {
         success: false,
         error: 'DataSourceError',
@@ -33,7 +33,7 @@ export async function fetchAdminUsers(
     }
 
     // User zu Admin-Format konvertieren
-    let adminUsers: AdminUser[] = combinedUsersResult.data.map(user => ({
+    let adminUsers: AdminUser[] = combinedUsersResult.map((user: any) => ({
       id: user.id,
       firstName: user.displayName?.split(' ')[0] || user.firstName || '',
       lastName: user.displayName?.split(' ').slice(1).join(' ') || user.lastName || '',
@@ -150,8 +150,13 @@ export async function createAdminUser(
       hashedPassword = await bcrypt.hash(request.initialPassword, 10);
     }
 
-    // Standardberechtigungen für die Rolle setzen
-    const defaultPermissions = DEFAULT_ROLE_PERMISSIONS[request.role] || DEFAULT_ROLE_PERMISSIONS.user;
+    // Standardberechtigungen für die Rolle setzen  
+    const defaultPermissions = (DEFAULT_ROLE_PERMISSIONS[request.role] || DEFAULT_ROLE_PERMISSIONS.user).map(perm => ({
+      id: `perm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      resource: perm.resource,
+      action: perm.action,
+      granted: perm.granted
+    }));
 
     // User in manueller DataSource erstellen
     const newUser = {
@@ -171,11 +176,11 @@ export async function createAdminUser(
 
     const createResult = await createManualUser(newUser);
     
-    if (!createResult.success) {
+    if (!createResult) {
       return {
         success: false,
         error: 'CreateError',
-        message: createResult.message || 'Fehler beim Erstellen des Admin-Users'
+        message: 'Fehler beim Erstellen des Admin-Users'
       };
     }
 
@@ -231,7 +236,12 @@ export async function updateAdminUser(
     // Berechtigungen aktualisieren wenn Rolle geändert wird
     let updatedPermissions = existingUserResult.data.permissions;
     if (updates.role && updates.role !== existingUserResult.data.role) {
-      updatedPermissions = DEFAULT_ROLE_PERMISSIONS[updates.role] || DEFAULT_ROLE_PERMISSIONS.user;
+      updatedPermissions = (DEFAULT_ROLE_PERMISSIONS[updates.role] || DEFAULT_ROLE_PERMISSIONS.user).map(perm => ({
+        id: `perm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        resource: perm.resource,
+        action: perm.action,
+        granted: perm.granted
+      }));
     }
     if (updates.permissions) {
       updatedPermissions = updates.permissions as any;
@@ -253,11 +263,11 @@ export async function updateAdminUser(
     // User in manueller DataSource aktualisieren
     const updateResult = await updateManualUser(userId, updateData);
     
-    if (!updateResult.success) {
+    if (!updateResult) {
       return {
         success: false,
         error: 'UpdateError',
-        message: updateResult.message || 'Fehler beim Aktualisieren des Admin-Users'
+        message: 'Fehler beim Aktualisieren des Admin-Users'
       };
     }
 
@@ -310,11 +320,11 @@ export async function deleteAdminUser(
     // User aus manueller DataSource löschen
     const deleteResult = await deleteManualUser(userId);
     
-    if (!deleteResult.success) {
+    if (!deleteResult) {
       return {
         success: false,
         error: 'DeleteError',
-        message: deleteResult.message || 'Fehler beim Löschen des Admin-Users'
+        message: 'Fehler beim Löschen des Admin-Users'
       };
     }
 

@@ -17,6 +17,8 @@ const StatsPage: React.FC = () => {
     loadStats();
   }, []);
 
+
+
   const loadStats = async () => {
     try {
       setLoading(true);
@@ -164,6 +166,8 @@ const StatsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 };

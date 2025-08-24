@@ -4,9 +4,11 @@ import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 import Dashboard from './components/Dashboard';
 import LoginPage from './modules/auth/LoginPage';
+import MultiProviderLoginPage from './modules/auth/MultiProviderLoginPage';
 import HRModule from './modules/hr/HRModule';
 import SupportModule from './modules/support/SupportModule';
 import AIModule from './modules/ai/AIModule';
+import AdminPortalModule from './modules/admin-portal/AdminPortalModule';
 import RequireAuth from './components/RequireAuth';
 import ErrorBoundary from './components/ErrorBoundary';
 import ThemeSettings from './components/ThemeSettings';
@@ -20,6 +22,11 @@ function App() {
         <Routes>
           {/* Authentication Routes */}
           <Route path="/login" element={
+            <AuthLayout>
+              <MultiProviderLoginPage />
+            </AuthLayout>
+          } />
+          <Route path="/login/old" element={
             <AuthLayout>
               <LoginPage />
             </AuthLayout>
@@ -54,6 +61,14 @@ function App() {
             <RequireAuth>
               <MainLayout>
                 <AIModule />
+              </MainLayout>
+            </RequireAuth>
+          } />
+
+          <Route path="/admin-portal/*" element={
+            <RequireAuth>
+              <MainLayout>
+                <AdminPortalModule />
               </MainLayout>
             </RequireAuth>
           } />

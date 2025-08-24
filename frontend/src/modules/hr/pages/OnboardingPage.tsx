@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import '../styles/HRPages.css';
+import SchemaManagerModal from '../components/SchemaManagerModal';
 
 const OnboardingPage: React.FC = () => {
+  const [schemaManagerOpen, setSchemaManagerOpen] = useState(false);
+
   return (
     <div className="hr-page">
       <div className="page-header">
@@ -10,7 +13,14 @@ const OnboardingPage: React.FC = () => {
           <p>Automatische Einarbeitungspläne und Aufgabenverfolgung</p>
         </div>
         <div className="page-actions">
-          <button className="btn btn-primary">
+          <button 
+            className="btn btn-primary"
+            onClick={() => setSchemaManagerOpen(true)}
+            title="Feldtypen für alle Mitarbeiter verwalten"
+          >
+            📊 Zusätzliche Informationen
+          </button>
+          <button className="btn btn-secondary">
             ➕ Neuer Onboarding-Plan
           </button>
         </div>
@@ -43,6 +53,13 @@ const OnboardingPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Schema Manager Modal */}
+      <SchemaManagerModal
+        isOpen={schemaManagerOpen}
+        onClose={() => setSchemaManagerOpen(false)}
+        onSchemasUpdated={() => {}}
+      />
     </div>
   );
 };

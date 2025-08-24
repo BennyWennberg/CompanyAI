@@ -2,10 +2,10 @@
 
 ## 📋 Projektübersicht
 
-**Version:** 2.0.0  
+**Version:** 2.1.0  
 **Status:** Aktive Entwicklung  
 **Architektur:** Modulbasiert  
-**Letzte Aktualisierung:** 8. Dezember 2024
+**Letzte Aktualisierung:** 14. Dezember 2024
 
 CompanyAI ist eine modulbasierte Unternehmensanwendung, die verschiedene Geschäftsbereiche durch spezialisierte KI-Module unterstützt. Das System folgt einer skalierbaren Mikroservice-ähnlichen Architektur mit zentraler Authentifizierung und konsistenten APIs.
 
@@ -18,6 +18,9 @@ backend/src/
 └── modules/                    # Modulbasierte Geschäftslogik
     ├── hr/                     # Human Resources Modul
     ├── support/               # Customer Support Modul
+    ├── ai/                    # Artificial Intelligence Modul
+    ├── admin/                 # Admin-Management Modul
+    ├── admin-portal/          # Multi-Source User-Integration (NEU v1.0.0)
     └── [zukünftige Module]/   # Erweiterbar für neue Bereiche
 ```
 
@@ -61,7 +64,42 @@ docs/
 - **API-Endpunkte:** 3 Endpunkte
 - **Dokumentation:** [Support-Modul Docs](./modules/support/README.md)
 
-### 3. Geplante Module
+### 3. AI-Modul (Artificial Intelligence) - ✅ Vollständig implementiert
+- **Zweck:** Multi-Provider AI-Chat und RAG-System
+- **Status:** Produktionsbereit
+- **Funktionen:**
+  - Multi-Provider Chat (OpenAI, Gemini, Ollama)
+  - RAG-gestützte Dokumentensuche
+  - HR-Assistent für fachspezifische Anfragen
+- **API-Endpunkte:** 12+ Endpunkte
+- **Dokumentation:** [AI-Modul Docs](./modules/ai/README.md)
+
+### 4. Admin-Modul (Administration) - ✅ Vollständig implementiert
+- **Zweck:** System-Administration und User-Management
+- **Status:** Produktionsbereit
+- **Funktionen:**
+  - User-Management und Berechtigungen
+  - System-Einstellungen
+  - Audit-Logs und Systemstatistiken
+- **API-Endpunkte:** 15+ Endpunkte
+- **Dokumentation:** [Admin-Modul Docs](./modules/admin/README.md)
+
+### 5. Admin-Portal (Multi-Source User-Integration) - ✅ NEU v1.0.0
+- **Zweck:** Integration von Usern aus 4 verschiedenen Quellen
+- **Status:** Vollständig implementiert
+- **Funktionen:**
+  - Microsoft Entra ID Synchronisation (Graph API)
+  - LDAP-Server Integration (Active Directory, OpenLDAP)
+  - CSV/Excel Bulk-Upload mit Auto-Field-Mapping
+  - Manuelle Web-basierte User-Erstellung
+  - Auto-Schema-Discovery mit dynamischer DB-Migration
+  - E-Mail-Conflict-Detection und Resolution
+  - Unified User-View und Advanced Analytics
+- **API-Endpunkte:** 48 Endpunkte
+- **Frontend-Pages:** 7 vollständige React-Seiten
+- **Dokumentation:** [Admin-Portal Docs](./modules/admin-portal/README.md)
+
+### 6. Geplante Module
 - **Produktion-Modul:** Fertigungsprozesse und Qualitätskontrolle
 - **Finanzen-Modul:** Budgetierung und Finanzberichte
 - **Marketing-Modul:** Kampagnen und Lead-Management
@@ -117,22 +155,27 @@ Authorization: Bearer aHIubWFuYWdlckBjb21wYW55LmNvbQ==
 
 ## 📊 Aktuelle Metriken
 
-### Code-Basis (Stand: 8. Dezember 2024)
-- **Backend-Dateien:** 12 TypeScript-Dateien
-- **Code-Zeilen:** ~1.500 Zeilen
-- **Module:** 2 vollständig, 1 in Planung
-- **API-Endpunkte:** 11 implementiert
-- **Test-Coverage:** Manuelle Tests verfügbar
+### Code-Basis (Stand: 14. Dezember 2024)
+- **Backend-Dateien:** 45+ TypeScript-Dateien
+- **Code-Zeilen:** ~8.000+ Zeilen
+- **Module:** 5 vollständig implementiert (HR, Support, AI, Admin, Admin-Portal)
+- **API-Endpunkte:** 59 implementiert (HR: 8, Support: 3, Admin-Portal: 48)
+- **Frontend-Pages:** 20+ React-Komponenten
+- **Test-Coverage:** PowerShell-Scripts + manuelle Tests verfügbar
 
 ### Funktionalitäten
-- ✅ Modulare Architektur implementiert
-- ✅ Zentrale Authentifizierung
-- ✅ HR-Vollmodul mit 6 Hauptfunktionen
+- ✅ Modulare Architektur vollständig implementiert
+- ✅ Zentrale Authentifizierung mit rollenbasierter Zugriffskontrolle
+- ✅ HR-Vollmodul mit 6 Hauptfunktionen + DataSource-Integration
 - ✅ Support-Basismodul mit Ticket-Management
+- ✅ AI-Modul mit Multi-Provider Chat + RAG-System
+- ✅ Admin-Modul mit System-Management
+- ✅ Admin-Portal mit Multi-Source User-Integration (4 Quellen)
+- ✅ Frontend-Integration mit React + Tailwind CSS
 - ✅ PowerShell-Entwicklungstools
-- ✅ Umfassende Dokumentation
-- 🔄 Frontend-Integration (in Arbeit)
-- 📋 Datenbank-Integration (geplant)
+- ✅ Umfassende Dokumentation (800+ Seiten)
+- 🔄 Externe Datenbank-Integration (SQLite für Admin-Portal)
+- 📋 PostgreSQL/MongoDB-Integration (geplant)
 
 ## 🎯 Roadmap & Nächste Schritte
 
@@ -158,7 +201,11 @@ Authorization: Bearer aHIubWFuYWdlckBjb21wYW55LmNvbQ==
 | [CHANGELOG.md](./CHANGELOG.md) | Versionshistorie und Änderungen | Entwickler, Stakeholder |
 | [modules/hr/](./modules/hr/) | HR-Modul Dokumentation | HR-Team, Entwickler |
 | [modules/support/](./modules/support/) | Support-Modul Dokumentation | Support-Team, Entwickler |
+| [modules/ai/](./modules/ai/) | AI-Modul und RAG-System Dokumentation | AI-Team, Entwickler |
+| [modules/admin/](./modules/admin/) | Admin-Modul Dokumentation | System-Admins, Entwickler |
+| [modules/admin-portal/](./modules/admin-portal/) | Admin-Portal Multi-Source Integration | IT-Admins, Entwickler |
 | [architecture/](./architecture/) | Technische Architektur | Entwickler, System-Architekten |
+| [INTERDEPENDENCY.md](./INTERDEPENDENCY.md) | System-Abhängigkeiten und Integration-Guidelines | Entwickler, KI-Assistenten |
 
 ## 🔍 Quick Links
 

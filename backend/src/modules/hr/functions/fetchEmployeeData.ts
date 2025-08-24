@@ -56,7 +56,7 @@ export async function fetchEmployeeData(
     } = request;
 
     // Nutze Combined DataSources statt Mock-Daten
-    let filteredUsers = findCombinedUsers({
+    let filteredUsers = await findCombinedUsers({
       source: 'all',
       department,
       accountEnabled: status === 'active' ? true : status === 'inactive' ? false : undefined
@@ -64,7 +64,7 @@ export async function fetchEmployeeData(
 
     // Filter nach employeeId
     if (employeeId) {
-      filteredUsers = filteredUsers.filter(user => user.id === employeeId);
+      filteredUsers = filteredUsers.filter((user: CombinedUser) => user.id === employeeId);
     }
 
     // Konvertiere zu Employee Format
@@ -107,8 +107,8 @@ export async function fetchEmployeeData(
  */
 export async function fetchEmployeeById(employeeId: string): Promise<APIResponse<Employee>> {
   try {
-    const users = getCombinedUsers('all');
-    const user = users.find(u => u.id === employeeId);
+    const users = await getCombinedUsers('all');
+    const user = users.find((u: CombinedUser) => u.id === employeeId);
 
     if (!user) {
       return {
@@ -304,14 +304,14 @@ export async function getEmployeeStats(): Promise<APIResponse<{
 }>> {
   try {
     // Nutze Combined DataSources Stats
-    const combinedStats = getCombinedStats();
-    const allUsers = getCombinedUsers('all');
+    const combinedStats = await getCombinedStats();
+    const allUsers = await getCombinedUsers('all');
     
     // Konvertiere zu Employee-kompatiblen Statistiken
     const totalEmployees = allUsers.length;
     
     // Statistiken nach Abteilung (ohne "Unbekannt"/"Unknown")
-    const byDepartment = allUsers.reduce((acc, user) => {
+    const byDepartment = allUsers.reduce((acc: Record<string, number>, user: CombinedUser) => {
       const deptRaw = (user.department || '').trim();
       if (!deptRaw) return acc;
       const deptLower = deptRaw.toLowerCase();
@@ -321,7 +321,7 @@ export async function getEmployeeStats(): Promise<APIResponse<{
     }, {} as Record<string, number>);
 
     // Statistiken nach Status (basierend auf accountEnabled)
-    const byStatus = allUsers.reduce((acc, user) => {
+    const byStatus = allUsers.reduce((acc: Record<string, number>, user: CombinedUser) => {
       const status = user.accountEnabled === true ? 'active' : 
                     user.accountEnabled === false ? 'inactive' : 'pending';
       acc[status] = (acc[status] || 0) + 1;

@@ -11,6 +11,37 @@ export interface Employee {
   status: 'active' | 'inactive' | 'pending';
 }
 
+// Schema-basierte Zusatzinformationen
+export interface FieldSchema {
+  id: string;
+  name: string;             // "Gehalt", "Führerschein", etc.
+  type: 'text' | 'number' | 'date' | 'select' | 'boolean';
+  category: string;         // "Finanzen", "Personal", etc.
+  unit?: string;            // "€", "Tage", "%", etc.
+  required: boolean;
+  defaultValue?: string;
+  selectOptions?: string[]; // Für select-Felder: ["Option1", "Option2"]
+  createdAt: Date;
+  createdBy: string;
+  updatedAt?: Date;
+  updatedBy?: string;
+}
+
+export interface UserFieldValue {
+  employeeId: string;
+  schemaId: string;
+  value: string;
+  updatedAt: Date;
+  updatedBy: string;
+}
+
+// Kombinierte Ansicht für Frontend
+export interface AdditionalInfoField {
+  schema: FieldSchema;
+  value?: string;
+  hasValue: boolean;
+}
+
 export interface OnboardingPlan {
   employeeId: string;
   tasks: OnboardingTask[];
@@ -74,12 +105,60 @@ export interface CreateHRReportRequest {
   includeMetrics?: string[];
 }
 
+// Schema Management Requests
+export interface CreateFieldSchemaRequest {
+  name: string;
+  type: FieldSchema['type'];
+  category: string;
+  unit?: string;
+  required: boolean;
+  defaultValue?: string;
+  selectOptions?: string[];
+}
+
+export interface UpdateFieldSchemaRequest {
+  name?: string;
+  category?: string;
+  unit?: string;
+  required?: boolean;
+  defaultValue?: string;
+  selectOptions?: string[];
+}
+
+// User Values Requests
+export interface UpdateUserFieldValuesRequest {
+  values: {
+    schemaId: string;
+    value: string;
+  }[];
+}
+
 // Response-Typen für API-Responses
 export interface APIResponse<T> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
+}
+
+// Document Management Types
+
+export interface HRDocument {
+  id: string;
+  fileName: string;
+  category: string;
+  fileType: string;
+  fileSize: string;
+  uploadDate: Date;
+  filePath: string;
+  employeeId: string;
+}
+
+export interface UploadDocumentRequest {
+  employeeId: string;
+  fileName: string;
+  category: string;
+  fileBuffer: Buffer;
 }
 
 export interface PaginatedResponse<T> {

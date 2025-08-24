@@ -82,6 +82,7 @@ export interface SyncStatus {
   devicesCount: number;
   success: boolean;
   error?: string;
+  duration_ms?: number;
 }
 
 export interface GraphResponse<T> {

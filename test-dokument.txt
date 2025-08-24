@@ -1,0 +1,14 @@
+﻿HR Test-Dokument
+=================
+
+Mitarbeiter: Wennberg Benny
+Datum: 22.08.2025 13:36
+Kategorie: Test-Dokument
+
+Dies ist eine Test-Datei für das Document-Management System.
+Das automatische Upload sollte diese Datei in:
+C:\Code\Company_Allg_Data\HR_Module\Wennberg_Benny\Documents\
+
+speichern und gleichzeitig user_details.txt aktualisieren.
+
+Test erfolgreich!
