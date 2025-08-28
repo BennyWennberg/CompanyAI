@@ -2,13 +2,13 @@
 
 ## 📋 Modul-Übersicht
 
-**Modul-Name:** Support (Customer Support)  
-**Version:** 1.0.0  
-**Status:** ✅ Basis implementiert, 🔄 In Entwicklung  
+**Modul-Name:** Support (Internes IT-Ticketsystem)  
+**Version:** 1.1.0  
+**Status:** ✅ Vollständig implementiert mit Ticket-Details & Kommentaren  
 **Entwickler:** CompanyAI Team  
 **Letzte Aktualisierung:** 8. Dezember 2024
 
-Das Support-Modul ist das zweite implementierte Modul von CompanyAI und bietet grundlegende Funktionalitäten für Customer Support und Ticket-Management.
+Das Support-Modul ist ein vollständiges **internes IT-Ticketsystem** für die IT-Unterstützung von Mitarbeitern mit Einzelticket-Ansichten, Timeline-basierten Kommentaren und IT-spezifischen Kategorien.
 
 ## 🎯 Zweck & Funktionsumfang
 
@@ -19,25 +19,30 @@ Das Support-Modul ist das zweite implementierte Modul von CompanyAI und bietet g
 - **Status-Tracking:** Vollständige Nachverfolgung des Bearbeitungsstands
 
 ### Zielgruppen
-- **Support-Agents:** Ticket-Bearbeitung und Kundenkommunikation
-- **Support-Manager:** Übersicht und Steuerung des Support-Prozesses
-- **Kunden:** Ticket-Erstellung und Status-Verfolgung (geplant)
-- **System-Administratoren:** Konfiguration und Monitoring
+- **IT-Support-Agents:** Ticket-Bearbeitung und interne Problemlösung
+- **IT-Manager:** Übersicht und Steuerung des IT-Support-Prozesses
+- **Mitarbeiter:** IT-Ticket-Erstellung und Status-Verfolgung
+- **System-Administratoren:** Konfiguration und Monitoring des IT-Systems
 
 ## 🔧 Implementierte Funktionen
 
-### 1. Ticket-Management
-**Datei:** `functions/manageTickets.ts`  
-**Beschreibung:** Grundlegende CRUD-Operationen für Support-Tickets
+### 1. Ticket-Management & Chat-System
+**Dateien:** `functions/manageTickets.ts`, `components/TicketChat.tsx`, `services/emailService.ts`  
+**Beschreibung:** Vollständiges IT-Ticketsystem mit Chat und E-Mail-Integration
 
 #### Features:
-- ✅ Neue Tickets erstellen
+- ✅ Neue IT-Tickets erstellen mit **User-Autocomplete**
 - ✅ Tickets suchen und filtern
 - ✅ Ticket-Status aktualisieren
-- ✅ Kategorisierung nach Typ
+- ✅ IT-spezifische Kategorisierung (Hardware, Software, Netzwerk, etc.)
 - ✅ Priorisierung nach Dringlichkeit
-- ✅ Zuweisungsmanagement
+- ✅ IT-Agent-Zuweisungsmanagement
 - ✅ Zeitstempel-Tracking
+- ✅ **Chat-System** für direkte Kommunikation
+- ✅ **E-Mail-Integration** - Chat-Nachrichten werden automatisch per E-Mail versendet
+- ✅ **E-Mail-Antworten** werden automatisch ins Ticket-Chat eingefügt
+- ✅ **Mitarbeiter-Informationen** (Name, Standort, Geräte-Info)
+- ✅ **User-Suche** mit Autocomplete aus allen Datenquellen (Entra ID, LDAP, etc.)
 
 #### Datenmodell:
 ```typescript
@@ -45,27 +50,81 @@ interface Ticket {
   id: string;
   title: string;
   description: string;
-  category: 'technical' | 'account' | 'billing' | 'general';
+  category: 'hardware' | 'software' | 'network' | 'access' | 'phone' | 'other';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'open' | 'in_progress' | 'waiting_customer' | 'resolved' | 'closed';
   customerId: string;
   customerEmail: string;
+  customerName?: string;    // NEU: Name des Mitarbeiters
   assignedTo?: string;
+  location?: string;        // NEU: Arbeitsplatz/Büro
+  deviceInfo?: string;      // NEU: Hardware-Informationen
   createdAt: Date;
   updatedAt: Date;
   resolvedAt?: Date;
 }
 ```
 
-### 2. Ticket-Kategorien
-| Kategorie | Beschreibung | Beispiel-Tickets |
-|-----------|--------------|------------------|
-| **Technical** | Technische Probleme | Login-Fehler, App-Crashes, Performance-Issues |
-| **Account** | Account-bezogene Anfragen | Passwort-Reset, Profil-Änderungen, Zugriffsprobleme |
-| **Billing** | Rechnungs- und Zahlungsthemen | Rechnungsanfragen, Zahlungsprobleme, Preisfragen |
-| **General** | Allgemeine Anfragen | Produktfragen, Feature-Requests, Feedback |
+### 2. IT-Ticket-Kategorien
+| Kategorie | Icon | Beschreibung | Beispiel-Tickets |
+|-----------|------|--------------|------------------|
+| **Hardware** | 🖥️ | Hardware-Probleme | Laptop startet nicht, Drucker defekt, Monitor-Ausfall |
+| **Software** | 💻 | Software-Support | Office-Installation, App-Updates, Programm-Fehler |
+| **Network** | 🌐 | Netzwerk-Probleme | WLAN-Ausfall, VPN-Zugang, Server nicht erreichbar |
+| **Access** | 🔐 | Zugriffs-Management | Passwort-Reset, Berechtigungen, Account-Probleme |
+| **Phone** | 📞 | Telefon-System | Durchwahl einrichten, Voicemail-Probleme, Telefon defekt |
+| **Other** | 📋 | Sonstige IT-Anfragen | Allgemeine IT-Fragen, Equipment-Requests |
 
-### 3. Prioritätsstufen
+### 3. E-Mail-Integration
+
+**Status:** ✅ Vollständig implementiert
+
+Das Support-System verfügt über eine vollständige E-Mail-Integration:
+
+#### 📤 **Automatischer E-Mail-Versand**
+- **Chat-Nachrichten** (Type: `user_message`) werden automatisch an die `customerEmail` des Tickets gesendet
+- **Interne Notizen** (Type: `internal_note`) bleiben nur im System und werden NICHT per E-Mail versendet
+- **Schöne E-Mail-Templates** mit Ticket-Informationen, Status, und Priorität
+- **Reply-To-Integration** mit Ticket-ID für automatische Zuordnung
+
+#### 📧 **Automatischer E-Mail-Empfang**
+- **E-Mail-Antworten** von Mitarbeitern werden automatisch ins Ticket-Chat eingefügt
+- **Intelligentes Parsing** entfernt Signaturen und E-Mail-Quotes
+- **Ticket-ID-Erkennung** aus Subject-Zeile und Headers
+- **IMAP-Monitoring** für Echtzeit-Verarbeitung eingehender E-Mails
+
+#### ⚙️ **Konfiguration**
+Erstelle eine `.env`-Datei im Backend-Verzeichnis mit folgenden E-Mail-Einstellungen:
+
+```bash
+# E-Mail-Versand (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=support@company.com
+SMTP_PASS=your-app-password
+
+# E-Mail-Empfang (IMAP) - Optional
+ENABLE_EMAIL_RECEIVE=true
+IMAP_HOST=imap.gmail.com
+IMAP_PORT=993
+IMAP_TLS=true
+IMAP_USER=support@company.com
+IMAP_PASS=your-app-password
+
+# Support-Adressen
+SUPPORT_FROM_EMAIL=IT-Support <support@company.com>
+SUPPORT_REPLY_EMAIL=tickets@company.com
+```
+
+#### 🔄 **Workflow**
+1. **IT-Agent** schreibt Chat-Nachricht im Ticket
+2. **System** sendet automatisch formatierte E-Mail an Mitarbeiter
+3. **Mitarbeiter** antwortet per E-Mail  
+4. **System** fügt Antwort automatisch ins Ticket-Chat ein
+5. **IT-Agent** sieht Antwort sofort im Chat
+
+### 4. Prioritätsstufen
 | Priorität | SLA-Zeit | Beschreibung | Beispiel |
 |-----------|----------|--------------|----------|
 | **Urgent** | < 1h | Kritische System-Ausfälle | Produktions-App offline |

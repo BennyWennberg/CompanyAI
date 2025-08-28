@@ -1123,3 +1123,184 @@ Bestehende Module MÜSSEN schrittweise in das hierarchische Permission-System in
 **Wichtig**: Das hierarchische Permission-System ist ab v2.1.0 der neue Standard. Alle neuen Module MÜSSEN dieses System von Anfang an nutzen. Bestehende Module müssen sukzessive migriert werden.
 
 Diese Regeln gewährleisten Konsistenz, Wartbarkeit und Skalierbarkeit der CompanyAI-Architektur.
+
+---
+
+## 🔄 INTELLIGENTE RULE-EVOLUTION & STRUKTURSCHUTZ
+
+### 📁 PROJEKTSTRUKTUR-SCHUTZ (KRITISCH)
+
+#### Bestehende CompanyAI-Struktur MUSS beibehalten werden:
+```
+CompanyAI/
+├── backend/src/
+│   ├── modules/               # ✅ Modulare Architektur beibehalten
+│   │   ├── [module]/
+│   │   │   ├── orchestrator.ts    # ✅ PFLICHT für API-Handler
+│   │   │   ├── types.ts           # ✅ PFLICHT für Interfaces  
+│   │   │   ├── core/              # ✅ Business Logic
+│   │   │   ├── functions/         # ✅ Spezifische Funktionen
+│   │   │   └── README.md         # ✅ Dokumentation
+│   ├── services/             # ✅ Shared Services (auth.service.ts etc.)
+│   ├── datasources/          # ✅ Datenquellen (entraac, ldap etc.)
+│   └── utils/               # ✅ Utilities
+├── frontend/src/
+│   ├── modules/             # ✅ Frontend-Module spiegeln Backend
+│   │   ├── [module]/
+│   │   │   ├── pages/           # ✅ React-Komponenten
+│   │   │   ├── components/      # ✅ Wiederverwendbare Komponenten  
+│   │   │   └── [Module].tsx     # ✅ Haupt-Modul-Komponente
+│   ├── context/             # ✅ React Contexts (PermissionContext etc.)
+│   ├── layouts/             # ✅ Layout-Komponenten
+│   └── components/          # ✅ Globale Komponenten
+└── admin-data/              # ✅ JSON-basierte Datenspeicherung
+    ├── department-permissions.json
+    └── databases/
+```
+
+### 🚨 VERBOTEN: Struktur-Breaking Changes
+- ❌ Neue Top-Level-Ordner ohne Genehmigung
+- ❌ Orchestrator-Pattern umgehen (`orchestrator.ts` ist Pflicht)
+- ❌ Module außerhalb von `modules/` erstellen
+- ❌ Direct Database-Zugriff (nur über Services)
+- ❌ Hardcoded Paths ändern
+
+---
+
+## 🤔 RULE-EXCEPTION & EVOLUTION-SYSTEM
+
+### Wenn du eine SINNVOLLE Änderung machst, die gegen Rules verstößt:
+
+#### SCHRITT 1: Exception-Request erstellen
+```markdown
+<!-- RULE-EXCEPTION-REQUEST -->
+## 📋 Rule-Verstoß-Begründung
+
+**Verstoßene Rule:** [Welche Rule wird verletzt?]
+**Grund:** [Warum ist diese Änderung sinnvoll?]
+**Auswirkungen:** [Was ändert sich?]
+**Vorteile:** [Welche Verbesserungen bringt das?]
+**Rückwärts-Kompatibilität:** [Bleibt alles funktional?]
+
+### Beispiel:
+**Verstoßene Rule:** "Keine neuen Top-Level-Ordner"
+**Grund:** "Neuer 'integrations/' Ordner für externe API-Verbindungen"
+**Auswirkungen:** "Bessere Trennung von Core-Logik und Integrationen"
+**Vorteile:** "Klarere Architektur, einfachere Wartung"
+**Rückwärts-Kompatibilität:** "Ja, bestehende Module unverändert"
+```
+
+#### SCHRITT 2: Frage um Genehmigung
+```
+🤔 RULE-EXCEPTION-REQUEST: Darf ich [BESCHREIBUNG] machen?
+Grund: [KURZE BEGRÜNDUNG]
+```
+
+#### SCHRITT 3: Bei Genehmigung → Rule-Update
+Nach Genehmigung MUSS diese Rule aktualisiert werden mit:
+```markdown
+### ✅ NEUE REGEL (Akzeptierte Exception vom DD.MM.YYYY)
+- [Beschreibung der neuen erlaubten Praxis]
+- [Begründung warum es jetzt erlaubt ist]
+```
+
+---
+
+## 🔍 KONSISTENZ-CHECKS & QUALITÄTSSICHERUNG
+
+### Backend-Modul Vollständigkeits-Check:
+```bash
+# Jedes neue Backend-Modul MUSS haben:
+backend/src/modules/[module]/
+├── orchestrator.ts     # ✅ API-Handler
+├── types.ts           # ✅ TypeScript Interfaces
+├── core/              # ✅ Business Logic
+└── README.md          # ✅ Dokumentation
+```
+
+### Frontend-Modul Vollständigkeits-Check:
+```bash
+# Jedes neue Frontend-Modul MUSS haben:
+frontend/src/modules/[module]/
+├── [Module].tsx       # ✅ Haupt-Komponente
+├── pages/             # ✅ Route-Komponenten
+└── components/        # ✅ Wiederverwendbare Komponenten
+```
+
+### API-Consistency Check:
+```typescript
+// Alle API-Responses MÜSSEN diese Struktur haben:
+{
+  success: boolean,
+  data?: any,
+  error?: string,
+  message?: string
+}
+```
+
+### Permission-System Consistency:
+```typescript
+// Alle geschützten Routes MÜSSEN:
+router.post('/api/[module]/[endpoint]', 
+  requireAuth,                    # ✅ Authentication  
+  requirePermission('action', 'resource'), # ✅ Authorization
+  ModuleOrchestrator.handleMethod # ✅ Handler
+);
+```
+
+---
+
+## 🛡️ SECURITY & STABILITY GUARDS
+
+### Kritische Files - Extra Vorsicht:
+```
+backend/src/services/auth.service.ts      # 🔐 Authentication Core
+backend/src/modules/hr/core/auth.ts       # 🔐 Authorization Logic  
+frontend/src/context/PermissionContext.tsx # 🔐 Permission Management
+backend/admin-data/department-permissions.json # 📊 Permission Data
+frontend/src/App.tsx                      # 🏗️ App Architecture
+backend/src/app.ts                       # 🏗️ Backend Architecture
+```
+
+### Vor Änderungen an kritischen Files:
+1. **Backup erstellen** (Copy des Files)
+2. **Änderungen dokumentieren** (Was, Warum, Auswirkungen)
+3. **Testen** nach jeder Änderung
+4. **Rollback-Plan** haben
+
+### 🚫 AUTOMATISCH GENERIERTE DATEIEN - BEARBEITUNG VERBOTEN:
+Diese Dateien werden automatisch vom System generiert und dürfen NIEMALS manuell bearbeitet werden:
+```
+backend/admin-data/department-permissions.json  # Auto-Generated durch EISBÄR-POPULATION
+```
+
+**Warum verboten:**
+- Werden bei jedem Server-Neustart automatisch regeneriert
+- Manuelle Änderungen gehen verloren
+- Können das Auto-Population-System beschädigen
+- Enthalten automatisch berechnete Berechtigungsstrukturen
+
+**Was stattdessen tun:**
+- Änderungen in den Quell-Algorithmen vornehmen (EISBÄR-POPULATION System)
+- Backend neustart lässt Auto-Population laufen
+- Berechtigungen über Admin-Portal UI verwalten
+
+---
+
+## 📝 DEVELOPMENT WORKFLOW
+
+### Bei neuen Features:
+1. **Prüfe bestehende Struktur** - Passt es ins Modul-System?
+2. **Folge Namenskonventionen** - camelCase, kebab-case etc.
+3. **Implementiere Permission-Checks** - Wer darf was?
+4. **Dokumentiere Änderungen** - README.md updaten
+5. **Teste alle Benutzer-Rollen** - Admin, User, Test-User
+
+### Bei Struktur-Änderungen:
+1. **Rule-Exception-Request** stellen
+2. **Auf Genehmigung warten**
+3. **Bei Genehmigung: Rules updaten**
+4. **Änderungen implementieren**
+5. **Dokumentation anpassen**
+
+Diese intelligenten Rules schützen die CompanyAI-Architektur und ermöglichen gleichzeitig sinnvolle Evolution.

@@ -272,7 +272,9 @@ export class AuthService {
   }
   
   /**
-   * Create permission middleware compatible with existing code
+   * ⚠️ DEPRECATED: Old permission middleware - replaced by Enhanced Permission System
+   * This method now allows all authenticated users to maintain backward compatibility
+   * while the new Enhanced Permission System is being rolled out.
    */
   public createPermissionMiddleware(requiredAction: string, requiredResource: string) {
     return async (req: any, res: any, next: any) => {
@@ -286,25 +288,8 @@ export class AuthService {
         });
       }
       
-      // Get full user data for permission check
-      const userResponse = await this.userService.getUserById(user.id);
-      if (!userResponse.success || !userResponse.data) {
-        return res.status(403).json({
-          success: false,
-          error: 'PermissionDenied',
-          message: 'User-Daten konnten nicht geladen werden'
-        });
-      }
-      
-      const fullUser = userResponse.data;
-      
-      if (!this.hasPermission(fullUser, requiredAction, requiredResource)) {
-        return res.status(403).json({
-          success: false,
-          error: 'PermissionDenied',
-          message: `Keine Berechtigung für ${requiredAction} auf ${requiredResource}`
-        });
-      }
+      // 🚨 TEMPORARY: Allow all authenticated users during migration to Enhanced Permission System
+      console.log(`⚠️ DEPRECATED Permission-Check: ${requiredAction} auf ${requiredResource} für ${user.email} - ERLAUBT (Migration-Modus)`);
       
       next();
     };

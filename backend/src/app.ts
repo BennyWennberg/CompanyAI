@@ -12,6 +12,12 @@ import { registerAIRoutes } from './modules/ai/orchestrator';
 import { registerAdminRoutes } from './modules/admin/orchestrator';
 import { registerAdminPortalRoutes, AdminPortalOrchestrator } from './modules/admin-portal/orchestrator';
 import { registerAuthRoutes } from './modules/auth/orchestrator';
+
+// Initialize Support DataStore
+import './modules/support/core/dataStore';
+
+// Initialize Support Email Service  
+import { EmailService } from './modules/support/services/emailService';
 import { requireAuth } from './modules/hr/core/auth';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './openapi';
@@ -19,6 +25,9 @@ import { swaggerSpec } from './openapi';
 // Import DataSources Integration
 import { startDataSourceSync, handleGetUsers, handleGetDevices, handleCreateUser, handleCreateDevice, handleUpdateUser, handleUpdateDevice, handleDeleteUser, handleDeleteDevice, handleGetStats, handleGetSources, handleManualSync, handleGetSyncStatus } from './integrations';
 import { seedManualUsersIfEmpty } from './datasources/manual';
+
+// Import Permission Routes
+import { permissionRoutes } from './routes/permission.routes';
 
 const app = express();
 
@@ -99,7 +108,7 @@ app.get('/api/hello', (req, res) => {
         ]
       },
       auth: {
-        description: 'Multi-Provider Authentication (Admin, Manual, Entra, LDAP)',
+        description: 'Multi-Provider Authentication (Admin, Manual, Entra, LDAP) + Enhanced Permissions',
         endpoints: [
           'POST /api/auth/admin-token',
           'POST /api/auth/manual-login',
@@ -107,7 +116,10 @@ app.get('/api/hello', (req, res) => {
           'POST /api/auth/ldap-login',
           'GET /api/auth/entra/callback',
           'GET /api/auth/providers',
-          'GET /api/auth/test-tokens'
+          'GET /api/auth/test-tokens',
+          '🔑 GET /api/auth/permissions',
+          '🔑 POST /api/auth/permissions/invalidate',
+          '🔑 GET /api/auth/permissions/status'
         ]
       },
       data: {
@@ -151,6 +163,10 @@ app.get('/api/openapi.json', (_req, res) => res.json(swaggerSpec));
 
 // Auth Routes (OHNE requireAuth - da sie für Login verwendet werden)
 registerAuthRoutes(apiRouter);
+
+// Permission Routes (MIT Authentifizierung, daher nach requireAuth)
+// Diese Routes verwenden ihr eigenes authenticateWithPermissions
+apiRouter.use('/auth', permissionRoutes);
 
 // Authentifizierung für alle API-Routes (außer Public Routes)
 apiRouter.use(requireAuth);

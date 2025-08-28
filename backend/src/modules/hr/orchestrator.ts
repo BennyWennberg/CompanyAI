@@ -41,6 +41,7 @@ import {
 
 // Import core functionality
 import { AuthenticatedRequest, requirePermission, logAuthEvent } from './core/auth';
+import { requireHRAccess, requireHRAdmin } from '../../middleware/permission.middleware';
 
 // Multer Configuration für HR-Dokumente
 const hrDocumentUpload = multer({
@@ -148,9 +149,13 @@ export class HROrchestrator {
       };
 
       const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown';
+      console.log(`🚀 HR handleFetchEmployeeData: User ${userEmail} (${userId}) requesting employee data`);
+      
       logAuthEvent(userId, 'fetch_employee_data', 'employee_data');
 
       const result = await fetchEmployeeData(request);
+      console.log(`📤 HR handleFetchEmployeeData: Returning ${result.success ? 'SUCCESS' : 'ERROR'} with ${result.data?.data?.length || 0} employees`);
 
       if (result.success) {
         res.json(result);
@@ -886,39 +891,39 @@ export function registerHRRoutes(router: any) {
 
   // Employee Data Routes
   router.get('/hr/employees',
-    requirePermission('read', 'employee_data'),
+    requireHRAccess(),
     HROrchestrator.handleFetchEmployeeData
   );
   
   router.get('/hr/employees/:employeeId',
-    requirePermission('read', 'employee_data'),
+    requireHRAccess(),
     HROrchestrator.handleFetchEmployeeById
   );
   
   router.post('/hr/employees',
-    requirePermission('write', 'employee_data'),
+    requireHRAccess(),
     HROrchestrator.handleCreateEmployee
   );
   
   router.put('/hr/employees/:employeeId',
-    requirePermission('write', 'employee_data'),
+    requireHRAccess(),
     HROrchestrator.handleUpdateEmployee
   );
 
   // Statistics Routes
   router.get('/hr/stats',
-    requirePermission('read', 'reports'),
+    requireHRAccess(),
     HROrchestrator.handleGetEmployeeStats
   );
 
   // Reports Routes
   router.post('/hr/reports',
-    requirePermission('write', 'reports'),
+    requireHRAccess(),
     HROrchestrator.handleCreateHRReport
   );
   
   router.post('/hr/reports/detailed',
-    requirePermission('write', 'reports'),
+    requireHRAccess(),
     HROrchestrator.handleCreateDetailedHRReport
   );
 

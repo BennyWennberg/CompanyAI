@@ -92,6 +92,19 @@ const MultiProviderLoginPage: React.FC = () => {
     navigate('/');
   };
 
+  // 🧪 TEST-USER Login (für Permission-Testing)
+  const handleTestUserLogin = async () => {
+    // Simulierter normaler User für Permission-Testing
+    const testUserToken = 'dGVzdC51c2VyQGNvbXBhbnkuY29t'; // test.user@company.com
+    
+    localStorage.setItem('authToken', testUserToken);
+    localStorage.setItem('userRole', 'user');
+    localStorage.setItem('userName', 'Test User');
+    localStorage.setItem('userEmail', 'test.user@company.com');
+    localStorage.setItem('userDepartment', 'standard');
+    navigate('/');
+  };
+
   // Manual Username/Password Login
   const handleManualLogin = async () => {
     const { username, password } = credentials.manual;
@@ -399,6 +412,23 @@ const MultiProviderLoginPage: React.FC = () => {
             </span>
           )}
         </button>
+
+        {/* 🧪 TEST-USER Button (nur für Permission-Testing) */}
+        {activeProvider === 'admin' && (
+          <button
+            className="auth-submit-btn test-user-btn"
+            onClick={handleTestUserLogin}
+            disabled={loading}
+            style={{ 
+              marginTop: '12px', 
+              background: '#6b7280', 
+              opacity: 0.8,
+              fontSize: '0.9rem'
+            }}
+          >
+            🧪 Als Test-User anmelden (für Permission-Tests)
+          </button>
+        )}
       </div>
 
       {/* Info Footer */}

@@ -1,10 +1,11 @@
 // React import removed - not needed in modern React with JSX Transform
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import MainLayout from './layouts/MainLayout';
+import EnhancedMainLayout from './layouts/EnhancedMainLayout';
 import AuthLayout from './layouts/AuthLayout';
-import Dashboard from './components/Dashboard';
+import EnhancedDashboard from './components/EnhancedDashboard';
 import LoginPage from './modules/auth/LoginPage';
 import MultiProviderLoginPage from './modules/auth/MultiProviderLoginPage';
+import EntraCallbackPage from './modules/auth/EntraCallbackPage';
 import HRModule from './modules/hr/HRModule';
 import SupportModule from './modules/support/SupportModule';
 import AIModule from './modules/ai/AIModule';
@@ -12,6 +13,8 @@ import AdminPortalModule from './modules/admin-portal/AdminPortalModule';
 import RequireAuth from './components/RequireAuth';
 import ErrorBoundary from './components/ErrorBoundary';
 import ThemeSettings from './components/ThemeSettings';
+import { EnhancedPermissionProvider, ModuleAccessGate } from './context/EnhancedPermissionContext';
+import './components/EnhancedDashboard.css';
 import './App.css';
 
 function App() {
@@ -19,6 +22,7 @@ function App() {
     <Router>
       <div className="App">
         <ErrorBoundary>
+        <EnhancedPermissionProvider>
         <Routes>
           {/* Authentication Routes */}
           <Route path="/login" element={
@@ -31,51 +35,61 @@ function App() {
               <LoginPage />
             </AuthLayout>
           } />
+          <Route path="/auth/callback/entra" element={<EntraCallbackPage />} />
           
-          {/* Protected Routes with Layout */}
+          {/* Protected Routes with Enhanced Layout and Permissions */}
           <Route path="/" element={
             <RequireAuth>
-              <MainLayout>
-                <Dashboard />
-              </MainLayout>
+              <EnhancedMainLayout>
+                <EnhancedDashboard />
+              </EnhancedMainLayout>
             </RequireAuth>
           } />
           
           <Route path="/hr/*" element={
             <RequireAuth>
-              <MainLayout>
-                <HRModule />
-              </MainLayout>
+              <ModuleAccessGate module="hr" fallback={<Navigate to="/" replace />}>
+                <EnhancedMainLayout>
+                  <HRModule />
+                </EnhancedMainLayout>
+              </ModuleAccessGate>
             </RequireAuth>
           } />
           
           <Route path="/support/*" element={
             <RequireAuth>
-              <MainLayout>
-                <SupportModule />
-              </MainLayout>
+              <ModuleAccessGate module="support" fallback={<Navigate to="/" replace />}>
+                <EnhancedMainLayout>
+                  <SupportModule />
+                </EnhancedMainLayout>
+              </ModuleAccessGate>
             </RequireAuth>
           } />
 
           <Route path="/ai/*" element={
             <RequireAuth>
-              <MainLayout>
-                <AIModule />
-              </MainLayout>
+              <ModuleAccessGate module="ai" fallback={<Navigate to="/" replace />}>
+                <EnhancedMainLayout>
+                  <AIModule />
+                </EnhancedMainLayout>
+              </ModuleAccessGate>
             </RequireAuth>
           } />
 
           <Route path="/admin-portal/*" element={
             <RequireAuth>
-              <MainLayout>
-                <AdminPortalModule />
-              </MainLayout>
+              <ModuleAccessGate module="admin_portal" requiredLevel="admin" fallback={<Navigate to="/" replace />}>
+                <EnhancedMainLayout>
+                  <AdminPortalModule />
+                </EnhancedMainLayout>
+              </ModuleAccessGate>
             </RequireAuth>
           } />
           
           {/* Default redirect */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </EnhancedPermissionProvider>
         </ErrorBoundary>
         <ThemeSettings />
       </div>

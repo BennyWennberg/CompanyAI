@@ -1,28 +1,8 @@
 import { AuthUser, AdminTokenRequest, APIResponse } from '../types';
 
-// Admin Token Mapping (beibehalten vom ursprünglichen System)
-const ADMIN_TOKENS = {
-  'YWRtaW5AY29tcGFueS5jb20=': {
-    id: 'admin-001',
-    name: 'Administrator',
-    email: 'admin@company.com',
-    role: 'admin' as const,
-    provider: 'admin' as const
-  },
-  'aHIubWFuYWdlckBjb21wYW55LmNvbQ==': {
-    id: 'hr-manager-001',
-    name: 'HR Manager',
-    email: 'hr.manager@company.com',
-    role: 'hr_manager' as const,
-    provider: 'admin' as const
-  },
-  'aHIuc3BlY2lhbGlzdEBjb21wYW55LmNvbQ==': {
-    id: 'hr-specialist-001',
-    name: 'HR Specialist',
-    email: 'hr.specialist@company.com',
-    role: 'hr_specialist' as const,
-    provider: 'admin' as const
-  }
+// Admin Token Mapping - Demo-Tokens entfernt
+const ADMIN_TOKENS: {[key: string]: any} = {
+  // Admin-Tokens werden über echte Authentifizierung verwaltet
 };
 
 /**

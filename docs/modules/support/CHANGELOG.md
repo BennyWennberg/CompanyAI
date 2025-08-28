@@ -2,17 +2,51 @@
 
 Alle Änderungen am Support-Modul von CompanyAI werden hier dokumentiert.
 
+## [1.1.0] - 2024-12-08
+
+### 🎉 **Internes IT-Ticketsystem implementiert**
+
+Das Support-Modul wurde vollständig zu einem **internen IT-Ticketsystem** für Mitarbeiter-Support erweitert.
+
+#### ✅ Neue Backend-Features
+- **Ticket-Detail-API** (`GET /api/support/tickets/:id/details`)
+  - Vollständige Ticket-Informationen mit Kommentar-Timeline
+  - Erweiterte Felder: `customerName`, `location`, `deviceInfo`
+- **Kommentar-System** (`POST /api/support/tickets/:id/comments`)
+  - Interne Notizen für IT-Support-Agents
+  - Automatische Status-Change-Kommentare
+  - Timeline-basierte Dokumentation
+- **IT-spezifische Kategorien**: 
+  - 🖥️ `hardware` - Computer, Laptops, Drucker
+  - 💻 `software` - Programme, Apps, Installationen
+  - 🌐 `network` - WLAN, VPN, Server-Probleme
+  - 🔐 `access` - Passwörter, Berechtigungen
+  - 📞 `phone` - Telefon-System, Durchwahlen
+  - 📋 `other` - Sonstige IT-Anfragen
+
+#### ✅ Neue Frontend-Features
+- **Ticket-Detail-Page** mit umfassender Timeline-View
+- **Kommentar-System** für interne IT-Notizen
+- **Status-Management** direkt aus der Detail-Ansicht
+- **IT-optimierte UI** mit Hardware/Software-spezifischen Icons
+- **Mitarbeiter-Informationen** (Name, Standort, Geräte-Info)
+
+#### ✅ Technische Verbesserungen
+- Automatische Status-Change-Dokumentation
+- Erweiterte Mock-Daten für realistisches IT-Szenario
+- Responsive Design für Mobile/Tablet-Nutzung
+- Error-Handling für alle neuen Endpunkte
+
 ## [Unveröffentlicht]
-### Geplant für v1.1 (Januar 2025)
+### Geplant für v1.2 (Januar 2025)
 - [ ] **Support-spezifische Authentifizierung** mit eigenen Rollen
 - [ ] **Erweiterte API-Endpunkte:**
-  - `GET /api/support/tickets/:id` - Einzelnes Ticket abrufen
-  - `POST /api/support/tickets/:id/comments` - Kommentare hinzufügen
-  - `GET /api/support/dashboard` - Support-Metriken
+  - `GET /api/support/dashboard` - IT-Support-Metriken
+  - `DELETE /api/support/tickets/:id` - Ticket löschen (Admin only)
 - [ ] **File-Upload-System** für Ticket-Attachments
-- [ ] **Ticket-Historie** mit Änderungsprotokoll
 - [ ] **Erweiterte Suchfunktionen** mit Volltext-Suche
 - [ ] **Automatisierte Tests** (Jest/Supertest)
+- [ ] **JSON-File-Persistierung** für Tickets und Kommentare
 
 ### Geplant für v1.2 (März 2025)
 - [ ] **Customer-Portal** für Self-Service

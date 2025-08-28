@@ -131,37 +131,11 @@ function mapLdapUserToRole(ldapUser: any): 'admin' | 'hr_manager' | 'hr_speciali
 }
 
 /**
- * Mock LDAP-Benutzer für Tests
+ * Mock LDAP-Benutzer für Tests - Demo-User entfernt
  */
 function getMockLdapUsers() {
   return [
-    {
-      username: 'bwerner',
-      displayName: 'Benjamin Werner',
-      email: 'bwerner@company.local',
-      department: 'IT',
-      title: 'System Administrator',
-      groups: ['Domain Users', 'IT-Team'],
-      mockPassword: 'ldap123' // Nur für Mock!
-    },
-    {
-      username: 'smueller',
-      displayName: 'Sandra Müller',
-      email: 'smueller@company.local',
-      department: 'Human Resources',
-      title: 'HR Manager',
-      groups: ['Domain Users', 'HR-Team', 'Managers'],
-      mockPassword: 'hr123' // Nur für Mock!
-    },
-    {
-      username: 'mschmidt',
-      displayName: 'Michael Schmidt',
-      email: 'mschmidt@company.local',
-      department: 'Sales',
-      title: 'Sales Representative',
-      groups: ['Domain Users', 'Sales-Team'],
-      mockPassword: 'user123' // Nur für Mock!
-    }
+    // Nur echte LDAP-User werden hier verwaltet
   ];
 }
 

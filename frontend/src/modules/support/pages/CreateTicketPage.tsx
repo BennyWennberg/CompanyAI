@@ -1,14 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import UserAutocomplete from '../components/UserAutocomplete';
 import '../styles/SupportPages.css';
 
 interface CreateTicketData {
   title: string;
   description: string;
-  category: 'technical' | 'account' | 'billing' | 'general' | '';
+  category: 'hardware' | 'software' | 'network' | 'access' | 'phone' | 'other' | '';
   priority: 'low' | 'medium' | 'high' | 'urgent' | '';
   customerId: string;
   customerEmail: string;
+  customerName?: string;
+  location?: string;
+  deviceInfo?: string;
+}
+
+// Support User Interface (entspricht Backend)
+interface SupportUser {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  displayName: string;
+  department?: string;
+  location?: string;
+  source: 'entra' | 'ldap' | 'upload' | 'manual';
 }
 
 const CreateTicketPage: React.FC = () => {
@@ -18,17 +34,26 @@ const CreateTicketPage: React.FC = () => {
     category: '',
     priority: '',
     customerId: '',
-    customerEmail: ''
+    customerEmail: '',
+    customerName: '',
+    location: '',
+    deviceInfo: ''
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // State für User-Autocomplete
+  const [userSearchValue, setUserSearchValue] = useState('');
+  
   const navigate = useNavigate();
 
   const categoryOptions = [
-    { value: 'technical', label: 'Technisch', icon: '🔧', description: 'Technische Probleme und Fehler' },
-    { value: 'account', label: 'Account', icon: '👤', description: 'Account-bezogene Anfragen' },
-    { value: 'billing', label: 'Abrechnung', icon: '💰', description: 'Rechnungs- und Zahlungsthemen' },
-    { value: 'general', label: 'Allgemein', icon: '📝', description: 'Allgemeine Anfragen und Feedback' }
+    { value: 'hardware', label: 'Hardware', icon: '🖥️', description: 'Computer, Laptops, Drucker, Monitor-Probleme' },
+    { value: 'software', label: 'Software', icon: '💻', description: 'Programme, Apps, Installationen, Updates' },
+    { value: 'network', label: 'Netzwerk', icon: '🌐', description: 'Internet, WLAN, VPN, Server-Zugang' },
+    { value: 'access', label: 'Zugriff', icon: '🔐', description: 'Passwörter, Berechtigungen, Account-Probleme' },
+    { value: 'phone', label: 'Telefon', icon: '📞', description: 'Telefon, Durchwahlen, Voicemail-Probleme' },
+    { value: 'other', label: 'Sonstige', icon: '📋', description: 'Andere IT-Probleme oder Anfragen' }
   ];
 
   const priorityOptions = [
@@ -103,7 +128,10 @@ const CreateTicketPage: React.FC = () => {
           category: formData.category,
           priority: formData.priority,
           customerId: formData.customerId.trim(),
-          customerEmail: formData.customerEmail.trim()
+          customerEmail: formData.customerEmail.trim(),
+          customerName: formData.customerName?.trim() || '',
+          location: formData.location?.trim() || '',
+          deviceInfo: formData.deviceInfo?.trim() || ''
         })
       });
 
@@ -129,6 +157,26 @@ const CreateTicketPage: React.FC = () => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  // Handler für User-Auswahl aus Autocomplete
+  const handleUserSelected = (user: SupportUser) => {
+    // Automatisches Ausfüllen der Felder
+    setFormData(prev => ({
+      ...prev,
+      customerId: user.id,
+      customerEmail: user.email,
+      customerName: user.displayName,
+      location: user.location || user.department || ''
+    }));
+    
+    // Clear Fehler
+    setErrors(prev => ({
+      ...prev,
+      customerId: '',
+      customerEmail: '',
+      customerName: ''
+    }));
   };
 
   return (
@@ -230,31 +278,85 @@ const CreateTicketPage: React.FC = () => {
 
           {/* Customer Information */}
           <div className="form-section">
-            <h3>👤 Kunden-Informationen</h3>
+            <h3>👤 Mitarbeiter-Informationen</h3>
             
+            {/* User Search with Autocomplete */}
+            <div className="form-group">
+              <label className="form-label">🔍 Mitarbeiter suchen</label>
+              <UserAutocomplete
+                value={userSearchValue}
+                onChange={setUserSearchValue}
+                onUserSelected={handleUserSelected}
+                placeholder="Name oder E-Mail-Adresse eingeben..."
+                disabled={loading}
+                className=""
+              />
+              <div className="form-help">
+                Beginnen Sie mit der Eingabe eines Namens oder einer E-Mail-Adresse, um Mitarbeiter zu finden.
+              </div>
+            </div>
+
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Kunden-ID*</label>
+                <label className="form-label">Mitarbeiter-ID*</label>
                 <input
                   type="text"
                   className={`form-input ${errors.customerId ? 'error' : ''}`}
                   value={formData.customerId}
                   onChange={(e) => handleInputChange('customerId', e.target.value)}
-                  placeholder="z.B. cust_12345"
+                  placeholder="z.B. emp_12345"
                 />
                 {errors.customerId && <div className="form-error">{errors.customerId}</div>}
               </div>
               
               <div className="form-group">
-                <label className="form-label">Kunden-E-Mail*</label>
+                <label className="form-label">E-Mail-Adresse*</label>
                 <input
                   type="email"
                   className={`form-input ${errors.customerEmail ? 'error' : ''}`}
                   value={formData.customerEmail}
                   onChange={(e) => handleInputChange('customerEmail', e.target.value)}
-                  placeholder="kunde@example.com"
+                  placeholder="mitarbeiter@company.com"
                 />
                 {errors.customerEmail && <div className="form-error">{errors.customerEmail}</div>}
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Name</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.customerName || ''}
+                  onChange={(e) => handleInputChange('customerName', e.target.value)}
+                  placeholder="Max Mustermann"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Standort/Abteilung</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={formData.location || ''}
+                  onChange={(e) => handleInputChange('location', e.target.value)}
+                  placeholder="Büro 2.15, IT-Abteilung"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Geräteinformationen</label>
+              <input
+                type="text"
+                className="form-input"
+                value={formData.deviceInfo || ''}
+                onChange={(e) => handleInputChange('deviceInfo', e.target.value)}
+                placeholder="ThinkPad X1 Carbon, Service-Tag: ABC123"
+              />
+              <div className="form-help">
+                Informationen zum betroffenen Gerät (optional, bei Hardware-Problemen hilfreich)
               </div>
             </div>
           </div>

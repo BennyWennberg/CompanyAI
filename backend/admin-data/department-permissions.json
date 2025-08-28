@@ -1,0 +1,19 @@
+[
+  {
+    "departmentId": "dept_it",
+    "departmentName": "IT",
+    "moduleAccess": {},
+    "subGroups": {},
+    "userOverrides": {
+      "entra_7292392f-63ff-436c-be65-53555ffbd73d": {
+        "admin_portal": "admin",
+        "support": "admin",
+        "hr": "admin"
+      }
+    },
+    "isMainDepartment": true,
+    "createdAt": "2025-08-28T08:03:22.179Z",
+    "updatedAt": "2025-08-28T08:03:22.179Z",
+    "updatedBy": "admin@company.com"
+  }
+]

@@ -3,7 +3,8 @@
 
 import { Request, Response } from 'express';
 import multer from 'multer';
-import { AuthenticatedRequest, requirePermission, logAuthEvent } from '../hr/core/auth';
+import { AuthenticatedRequest, requirePermission, requireAuth, logAuthEvent } from '../hr/core/auth';
+import { requireAdminPortalAccess, requireAdminPortalAdmin, requireUserDataAccess } from '../../middleware/permission.middleware';
 import { 
   SyncSourceRequest,
   UploadUsersRequest,
@@ -79,7 +80,7 @@ const upload = multer({
 export class AdminPortalOrchestrator {
   private static dbManager: AdminPortalDatabaseManager;
   private static syncOrchestrator: SyncOrchestrator;
-  private static userAggregator: UserAggregator;
+  public static userAggregator: UserAggregator;
   private static entraService: EntraSourceService;
   private static ldapService: LdapSourceService;
   private static uploadService: UploadSourceService;
@@ -119,6 +120,22 @@ export class AdminPortalOrchestrator {
       setTimeout(() => {
         AdminPortalOrchestrator.syncOrchestrator.syncAllSources('system_startup');
       }, 5000); // 5 Sekunden Verzögerung
+    }
+
+    // 🏗️ AUTO-POPULATION beim Server-Start (deaktiviert; aktivierbar via ENV ENABLE_PERMISSION_POPULATION_ON_STARTUP=true)
+    if (process.env.ENABLE_PERMISSION_POPULATION_ON_STARTUP === 'true') {
+      console.log('🏗️ Starte AUTO-POPULATION beim Server-Start (aktiviert durch ENV)...');
+      setTimeout(async () => {
+        try {
+          const { populateJSONWithAllUsers } = await import('./functions/permissions/departmentPermissions');
+          await populateJSONWithAllUsers();
+          console.log('✅ AUTO-POPULATION beim Server-Start abgeschlossen');
+        } catch (error) {
+          console.error('❌ AUTO-POPULATION beim Server-Start fehlgeschlagen:', error);
+        }
+      }, 7000); // 7 Sekunden Verzögerung (nach Auto-Sync)
+    } else {
+      console.log('⏸️ AUTO-POPULATION beim Server-Start ist deaktiviert');
     }
   }
 
@@ -1121,29 +1138,8 @@ export class AdminPortalOrchestrator {
       
       logAuthEvent(userId, 'generate_test_data', 'all');
 
-      // Test-User für manuelle Quelle erstellen
-      const testUsers: CreateManualUserRequest[] = [
-        {
-          firstName: 'Max',
-          lastName: 'Mustermann',
-          email: 'max.mustermann@test.com',
-          displayName: 'Max Mustermann',
-          department: 'IT',
-          jobTitle: 'Software Developer',
-          companyName: 'Test Company AG',
-          notes: 'Test-User für Entwicklung'
-        },
-        {
-          firstName: 'Anna',
-          lastName: 'Schmidt',
-          email: 'anna.schmidt@test.com',
-          displayName: 'Anna Schmidt',
-          department: 'HR',
-          jobTitle: 'HR Manager',
-          companyName: 'Test Company AG',
-          notes: 'Test-User für Entwicklung'
-        }
-      ];
+      // Test-User für manuelle Quelle erstellen - Demo-User entfernt
+      const testUsers: CreateManualUserRequest[] = [];
 
       const bulkResult = await AdminPortalOrchestrator.manualService.bulkCreateUsers(testUsers, userEmail);
 
@@ -1269,14 +1265,14 @@ export class AdminPortalOrchestrator {
           departmentId,
           departmentName: departmentId.replace('dept_', '').replace(/_/g, ' ').toUpperCase(),
           moduleAccess: {
-            hr: 'read',
-            support: 'write',
-            ai: 'read',
+            hr: 'access',
+            support: 'access',
+            ai: 'access',
             admin_portal: 'none'
           },
           pagePermissions: {
-            'hr.employees': { access: 'read', actions: { view: true, create: false, edit: false, delete: false } },
-            'support.tickets': { access: 'write', actions: { view: true, create: true, edit: true, close: false } }
+            'hr.employees': { access: 'access', actions: { view: true, create: false, edit: false, delete: false } },
+            'support.tickets': { access: 'access', actions: { view: true, create: true, edit: true, close: false } }
           },
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -1296,41 +1292,158 @@ export class AdminPortalOrchestrator {
   }
 
   /**
-   * Aktualisiert Department-Permissions
+   * ❌ DEAKTIVIERT: Legacy Department-Permissions Update (ohne Cascade)
    * PUT /api/admin-portal/hierarchy/departments/:departmentId/permissions
+   * 
+   * Diese Funktion wurde deaktiviert, da sie keine hierarchischen SubGroups unterstützte.
+   * Verwende stattdessen: handleUpdateDepartmentPermissionsWithCascade
    */
   static async handleUpdateDepartmentPermissions(req: AuthenticatedRequest, res: Response) {
+    console.log('❌ LEGACY-ENDPOINT verwendet! Verwende stattdessen /permissions/cascade');
+    
+    res.status(410).json({
+      success: false,
+      error: 'LegacyEndpointDeprecated',
+      message: 'Dieser Endpoint wurde deaktiviert. Verwende /permissions/cascade für hierarchische Berechtigungen.'
+    });
+  }
+
+  /**
+   * NEUE Hierarchische Department-Permissions mit Cascade-Logic
+   * PUT /api/admin-portal/hierarchy/departments/:departmentId/permissions/cascade
+   */
+  static async handleUpdateDepartmentPermissionsWithCascade(req: AuthenticatedRequest, res: Response) {
     try {
       const { departmentId } = req.params;
-      const permissionData = req.body;
+      const { 
+        moduleAccess, 
+        userOverrides, 
+        departmentName, 
+        cascadeMode = 'department',
+        // 🆕 NEUE SubGroup-Parameter 
+        subGroupId,
+        subGroupName,
+        subGroupPermissions
+      } = req.body;
+      
       const userId = req.user?.id || 'unknown';
       const userEmail = req.user?.email || 'unknown';
 
-      logAuthEvent(userId, 'update_department_permissions', `department_${departmentId}`);
+      logAuthEvent(userId, 'update_hierarchical_permissions', `department_${departmentId}_${cascadeMode}`);
       
-      console.log(`📝 Update Department-Permissions für: ${departmentId}`);
-      console.log('Permission-Data:', JSON.stringify(permissionData, null, 2));
-      
-      // TODO: Implementiere updateDepartmentPermissions aus separater Funktion
-      
-      // Mock-Response für jetzt
-      res.json({
-        success: true,
-        data: {
+      // 🎯 PRÜFE: SubGroup-Modus, User-Modus oder Department-Modus?
+      if (subGroupId && subGroupPermissions) {
+        console.log(`📂 UNTERGRUPPEN-UPDATE: ${subGroupId} in ${departmentId}`);
+        console.log('SubGroup-Permissions:', JSON.stringify(subGroupPermissions, null, 2));
+        console.log('User-Overrides:', JSON.stringify(userOverrides, null, 2));
+
+        // Import der SubGroup-spezifischen Funktion
+        const { saveSubGroupPermissions } = await import('./functions/permissions/departmentPermissions');
+        
+        // Speichere SubGroup-Permissions (Department-Permissions werden NICHT verändert)
+        const result = await saveSubGroupPermissions(
+          departmentId,        // Hauptabteilungs-ID
+          departmentName,      // Hauptabteilungs-Name
+          subGroupId,          // Untergruppen-ID  
+          subGroupName,        // Untergruppen-Name
+          subGroupPermissions, // SubGroup Module-Access
+          userOverrides || {},
+          userEmail
+        );
+
+        if (result.success) {
+          console.log('✅ Untergruppen-Permissions erfolgreich gespeichert');
+          res.json({
+            success: true,
+            data: result.data,
+            message: `Untergruppen-Permissions für "${subGroupName}" erfolgreich gespeichert`
+          });
+        } else {
+          console.error('❌ Fehler beim Speichern der Untergruppen-Permissions:', result.message);
+          res.status(500).json(result);
+        }
+        return;
+      } else if (!moduleAccess && userOverrides && Object.keys(userOverrides).length > 0) {
+        // 👤 NUR USER-OVERRIDES: Keine Department oder SubGroup Änderungen
+        console.log(`👤 NUR USER-OVERRIDES-UPDATE: ${departmentId}`);
+        console.log('User-Overrides:', JSON.stringify(userOverrides, null, 2));
+
+        const { updateUserOverridesOnly } = await import('./functions/permissions/departmentPermissions');
+        
+        const result = await updateUserOverridesOnly(
           departmentId,
-          ...permissionData,
-          updatedAt: new Date(),
-          updatedBy: userEmail
-        },
-        message: 'Department-Permissions erfolgreich aktualisiert (Mock)'
-      });
+          departmentName,
+          userOverrides,
+          userEmail,
+          subGroupId // Optional: wenn User in SubGroup ist
+        );
+
+        if (result.success) {
+          console.log('✅ User-Overrides erfolgreich gespeichert');
+          res.json({
+            success: true,
+            data: result.data,
+            message: 'User-Overrides erfolgreich gespeichert'
+          });
+        } else {
+          console.error('❌ Fehler beim Speichern der User-Overrides:', result.message);
+          res.status(500).json(result);
+        }
+        return;
+      }
+
+      // 🏢 NORMALE HAUPTABTEILUNGS-UPDATE (nur wenn moduleAccess gesendet wird)
+      if (!moduleAccess) {
+        console.log('⚠️ Keine moduleAccess gesendet - keine Department-Änderung');
+        return res.status(400).json({
+          success: false,
+          error: 'NoModuleAccess',
+          message: 'Keine Module-Berechtigungen zum Speichern erhalten'
+        });
+      }
+
+      console.log(`🏢 HAUPTABTEILUNGS-UPDATE: ${departmentId} (${cascadeMode}-Modus)`);
+      console.log('Module-Access:', JSON.stringify(moduleAccess, null, 2));
+      console.log('User-Overrides:', JSON.stringify(userOverrides, null, 2));
+
+      // Import der neuen hierarchischen Permission-Funktion
+      const { saveDepartmentPermissionsWithCascade } = await import('./functions/permissions/departmentPermissions');
+      
+      // Speichere die Permissions mit Cascade-Logic
+      const result = await saveDepartmentPermissionsWithCascade(
+        departmentId,
+        departmentName || departmentId,
+        moduleAccess || {},
+        userOverrides || {},
+        userEmail,
+        cascadeMode
+      );
+
+      if (result.success) {
+        console.log('✅ Hierarchische Permission-Update erfolgreich');
+        console.log(`   • Betroffene Abteilungen: ${result.data?.affectedDepartments?.length || 0}`);
+        console.log(`   • Betroffene User: ${result.data?.affectedUsers?.length || 0}`);
+        
+        res.json({
+          success: true,
+          data: result.data,
+          message: result.message
+        });
+      } else {
+        console.error('❌ Fehler beim hierarchischen Permission-Update:', result.message);
+        res.status(500).json({
+          success: false,
+          error: result.error,
+          message: result.message
+        });
+      }
       
     } catch (error) {
-      console.error('❌ Fehler beim Update der Department-Permissions:', error);
+      console.error('❌ Fehler beim hierarchischen Permission-Update:', error);
       res.status(500).json({
         success: false,
-        error: 'DepartmentPermissionsUpdateError',
-        message: 'Department-Permissions-Update fehlgeschlagen'
+        error: 'HierarchicalPermissionsUpdateError',
+        message: 'Hierarchisches Permission-Update fehlgeschlagen'
       });
     }
   }
@@ -1359,14 +1472,14 @@ export class AdminPortalOrchestrator {
           department: 'VERKAUF',
           subGroup: 'Verkauf | AS',
           moduleAccess: {
-            hr: 'read',
-            support: 'write',
-            ai: 'read',
+            hr: 'access',
+            support: 'access',
+            ai: 'access',
             admin_portal: 'none'
           },
           pagePermissions: {
-            'hr.employees': { access: 'read', actions: { view: true, create: false, edit: false, delete: false } },
-            'support.tickets': { access: 'write', actions: { view: true, create: true, edit: true, close: false } }
+            'hr.employees': { access: 'access', actions: { view: true, create: false, edit: false, delete: false } },
+            'support.tickets': { access: 'access', actions: { view: true, create: true, edit: true, close: false } }
           },
           permissionSources: {
             department: true,
@@ -1412,6 +1525,44 @@ export class AdminPortalOrchestrator {
         success: false,
         error: 'ModuleDefinitionsLoadError',
         message: 'Module-Definitionen konnten nicht geladen werden'
+      });
+    }
+  }
+
+  /**
+   * Lädt alle Department-Permissions (für Frontend-Initialisierung)
+   * GET /api/admin-portal/hierarchy/permissions/all
+   */
+  static async handleGetAllDepartmentPermissions(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+      logAuthEvent(userId, 'read', 'all_department_permissions');
+      
+      console.log(`📋 Lade alle Department-Permissions für Frontend...`);
+      
+      // Import der loadDepartmentPermissions Funktion
+      const { loadDepartmentPermissions } = await import('./functions/permissions/departmentPermissions');
+      
+      const result = await loadDepartmentPermissions();
+      
+      if (result.success && result.data) {
+        console.log(`✅ Alle Department-Permissions geladen: ${result.data.length} Abteilungen`);
+        res.json({
+          success: true,
+          data: result.data,
+          message: `${result.data.length} Department-Permissions geladen`
+        });
+      } else {
+        console.error('❌ Fehler beim Laden aller Department-Permissions:', result.message);
+        res.status(500).json(result);
+      }
+      
+    } catch (error) {
+      console.error('❌ Fehler beim Laden aller Department-Permissions:', error);
+      res.status(500).json({
+        success: false,
+        error: 'AllDepartmentPermissionsLoadError',
+        message: 'Alle Department-Permissions konnten nicht geladen werden'
       });
     }
   }
@@ -1973,6 +2124,337 @@ export class AdminPortalOrchestrator {
       });
     }
   }
+
+  /**
+   * Liefert die aktuellen Berechtigungen des eingeloggten Users
+   * GET /api/admin-portal/my-permissions
+   */
+  static async handleGetMyPermissions(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown@unknown';
+      const userName = (req.user as any)?.displayName || (req.user as any)?.name || 'Unknown User';
+      const userDepartment = req.user?.department || 'Unknown Department';
+      const userRole = req.user?.role || undefined; // ✅ User-Role für Admin-Check hinzugefügt
+
+      logAuthEvent(userId, 'get_my_permissions', 'hierarchical_permissions');
+      
+      console.log(`🔍 User ${userEmail} fragt eigene Berechtigungen ab...`);
+
+      // Lade User-Permissions über die hierarchische Permission-Logic
+      const { calculateUserPermissions } = await import('./functions/permissions/userPermissionChecker');
+      const permissionsResult = await calculateUserPermissions(userId, userName, userEmail, userDepartment, userRole);
+      
+      if (!permissionsResult.success || !permissionsResult.data) {
+        return res.status(500).json({
+          success: false,
+          error: 'PermissionCalculationError',
+          message: 'Berechtigungen konnten nicht berechnet werden'
+        });
+      }
+
+      // Konvertiere für Frontend-PermissionContext
+      const frontendFormat = {
+        userEmail: permissionsResult.data.userEmail,
+        userDepartment: permissionsResult.data.department,
+        permissions: permissionsResult.data.moduleAccess.map(moduleAccess => ({
+          moduleKey: moduleAccess.moduleKey,
+          hasAccess: moduleAccess.hasAccess,
+          accessLevel: moduleAccess.accessLevel,
+          source: 'department' as const, // TODO: Echte Source implementieren
+          reason: `Zugriff über Abteilung: ${permissionsResult.data?.department}`
+        })),
+        calculatedAt: permissionsResult.data.lastChecked,
+        isAdmin: permissionsResult.data.isAdmin || false
+      };
+
+      console.log(`✅ My-Permissions berechnet für ${userEmail}:`, {
+        totalModules: frontendFormat.permissions.length,
+        modulesWithAccess: frontendFormat.permissions.filter(p => p.hasAccess).length,
+        isAdmin: frontendFormat.isAdmin ? '👑 ADMINISTRATOR' : '👤 Normaler User'
+      });
+
+      res.json({
+        success: true,
+        data: frontendFormat,
+        message: `Berechtigungen für ${userEmail} berechnet`
+      });
+      
+    } catch (error) {
+      console.error('❌ Fehler bei My-Permissions-Abfrage:', error);
+      res.status(500).json({
+        success: false,
+        error: 'MyPermissionsError',
+        message: 'Eigene Berechtigungen konnten nicht geladen werden'
+      });
+    }
+  }
+
+  /**
+   * 🔍 DEBUG-DISCOVERY: Zeigt was das System wirklich findet
+   * GET /api/admin-portal/permissions/debug-discovery
+   */
+  static async handleDebugDiscovery(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown';
+      
+      logAuthEvent(userId, 'admin', 'debug_discovery');
+
+      console.log(`🔍 DEBUG-DISCOVERY gestartet von User: ${userEmail}`);
+
+      // 1. Lade ALLE User aus dem System
+      const allUsersResult = await AdminPortalOrchestrator.userAggregator.getUnifiedUsers({
+        page: 1,
+        limit: 10000
+      });
+
+      let allUsers: any[] = [];
+      let entfeuchtungUsers: any[] = [];
+      let departmentStats: {[key: string]: number} = {};
+
+      if (allUsersResult.success && allUsersResult.data) {
+        allUsers = allUsersResult.data.data;
+        
+        // Analysiere Department-Namen
+        allUsers.forEach(user => {
+          const dept = user.sourceData?.department || user.department || 'UNKNOWN';
+          departmentStats[dept] = (departmentStats[dept] || 0) + 1;
+          
+          // Sammle Entfeuchtung-User
+          if (dept.toLowerCase().includes('entfeuchtung')) {
+            entfeuchtungUsers.push({
+              userId: user.id,
+              userName: user.sourceData?.displayName || user.name || user.email,
+              email: user.email,
+              department: dept
+            });
+          }
+        });
+      }
+
+      // 2. Teste Discovery-Funktionen
+      const { discoverAllUsersInDepartment, identifySubGroupsForDepartment } = await import('./functions/permissions/departmentPermissions');
+      
+      const discoveredUsers = await discoverAllUsersInDepartment('Entfeuchtung');
+      const discoveredSubGroups = await identifySubGroupsForDepartment('Entfeuchtung');
+
+      // 3. Teste Hierarchie-Analyzer
+      const { analyzeUserHierarchy } = await import('./functions/permissions/hierarchyAnalyzer');
+      const hierarchyResult = await analyzeUserHierarchy(allUsers);
+
+      const debugResult = {
+        totalSystemUsers: allUsers.length,
+        entfeuchtungUsersFound: entfeuchtungUsers.length,
+        entfeuchtungUsers: entfeuchtungUsers,
+        departmentStats: Object.entries(departmentStats)
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 10), // Top 10 Departments
+        discoveryResults: {
+          discoveredUsersCount: discoveredUsers.length,
+          discoveredUsers: discoveredUsers,
+          discoveredSubGroupsCount: discoveredSubGroups.length,
+          discoveredSubGroups: discoveredSubGroups
+        },
+        hierarchyAnalysis: hierarchyResult.success ? {
+          departments: hierarchyResult.data?.departments || [],
+          subGroups: hierarchyResult.data?.subGroups || [],
+          totalDepartments: hierarchyResult.data?.departments.length || 0,
+          totalSubGroups: hierarchyResult.data?.subGroups.length || 0
+        } : { error: hierarchyResult.message }
+      };
+
+      console.log(`🔍 DEBUG-DISCOVERY Ergebnisse:`, {
+        totalUsers: debugResult.totalSystemUsers,
+        entfeuchtungUsers: debugResult.entfeuchtungUsersFound,
+        discoveredUsers: debugResult.discoveryResults.discoveredUsersCount,
+        discoveredSubGroups: debugResult.discoveryResults.discoveredSubGroupsCount
+      });
+
+      res.json({
+        success: true,
+        data: debugResult,
+        message: `DEBUG-Discovery abgeschlossen: ${debugResult.totalSystemUsers} System-User, ${debugResult.entfeuchtungUsersFound} Entfeuchtung-User gefunden`
+      });
+
+    } catch (error) {
+      console.error('❌ Fehler bei DEBUG-DISCOVERY:', error);
+      res.status(500).json({
+        success: false,
+        error: 'DebugDiscoveryError',
+        message: 'DEBUG-Discovery fehlgeschlagen: ' + String(error)
+      });
+    }
+  }
+
+  /**
+   * 🏗️ AUTO-POPULATION: Füllt JSON automatisch mit allen System-Usern
+   * POST /api/admin-portal/permissions/populate-users
+   */
+  static async handlePopulateUsers(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown';
+      
+      logAuthEvent(userId, 'admin', 'admin_portal');
+
+      console.log(`🚀 AUTO-POPULATION gestartet von User: ${userEmail}`);
+
+      // Import der populateJSONWithAllUsers Funktion
+      const { populateJSONWithAllUsers } = await import('./functions/permissions/departmentPermissions');
+
+      await populateJSONWithAllUsers();
+
+      res.json({
+        success: true,
+        data: true,
+        message: 'JSON erfolgreich mit allen System-Usern und Untergruppen gefüllt'
+      });
+
+    } catch (error) {
+      console.error('❌ Fehler bei AUTO-POPULATION:', error);
+      res.status(500).json({
+        success: false,
+        error: 'AutoPopulationError',
+        message: 'Auto-Population fehlgeschlagen: ' + String(error)
+      });
+    }
+  }
+
+  /**
+   * 🏢 VOLLSTÄNDIGE EISBÄR-POPULATION: Erstellt explizite JSON-Struktur mit ALLEN echten Abteilungen
+   * POST /api/admin-portal/permissions/eisbaer-population
+   */
+  static async handleEisbaerPopulation(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown';
+      
+      logAuthEvent(userId, 'admin', 'admin_portal');
+
+      console.log(`🏢 VOLLSTÄNDIGE EISBÄR-POPULATION gestartet von User: ${userEmail}`);
+
+      // Import der NEUEN VOLLSTÄNDIGEN EISBÄR-POPULATION Funktion
+      const { populateJSONWithAllUsers } = await import('./functions/permissions/departmentPermissions');
+
+      await populateJSONWithAllUsers(); // Verwendet die neue vollständige Version!
+
+      res.json({
+        success: true,
+        data: true,
+        message: '🎉 VOLLSTÄNDIGE EISBÄR-POPULATION abgeschlossen! JSON enthält jetzt ALLE echten Abteilungen, Untergruppen und User mit expliziten Berechtigungen.'
+      });
+
+    } catch (error) {
+      console.error('❌ Fehler bei VOLLSTÄNDIGER EISBÄR-POPULATION:', error);
+      res.status(500).json({
+        success: false,
+        error: 'EisbaerPopulationError',
+        message: 'EISBÄR-Population fehlgeschlagen: ' + String(error)
+      });
+    }
+  }
+
+  /**
+   * Initialisiert automatische Berechtigungsvererbung basierend auf echten Abteilungen
+   * POST /api/admin-portal/permissions/auto-initialize
+   */
+  static async handleInitializeAutomaticInheritance(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown';
+      
+      logAuthEvent(userId, 'initialize_automatic_inheritance', 'hierarchical_permissions');
+      
+      console.log(`🔄 User ${userEmail} initialisiert automatische Berechtigungsvererbung...`);
+      
+      // 1. Lade alle echten User für Hierarchie-Analyse
+      const usersResult = await AdminPortalOrchestrator.userAggregator.getUnifiedUsers({
+        page: 1,
+        limit: 10000
+      });
+      
+      if (!usersResult.success || !usersResult.data) {
+        return res.status(500).json({
+          success: false,
+          error: 'UserLoadError',
+          message: 'User konnten nicht für Hierarchie-Analyse geladen werden'
+        });
+      }
+      
+      // 2. Analysiere echte Abteilungsstruktur
+      const hierarchyResult = await analyzeUserHierarchy(usersResult.data.data);
+      
+      if (!hierarchyResult.success) {
+        return res.status(500).json(hierarchyResult);
+      }
+      
+      // 3. Erstelle automatisch Berechtigungsstruktur mit HIERARCHISCHER CASCADE-LOGIC
+      const { saveDepartmentPermissionsWithCascade } = await import('./functions/permissions/departmentPermissions');
+      const results = [];
+      
+      // 3a. Für jede Hauptabteilung - CASCADE zu ALLEN Untergruppen
+      if (hierarchyResult.data) {
+        for (const dept of hierarchyResult.data.departments) {
+          console.log(`🏢 Initialisiere Hauptabteilung mit CASCADE: ${dept.name}`);
+          
+          // Standard-Berechtigungen für Hauptabteilung
+          const defaultPermissions = {
+            hr: 'access' as const,
+            support: 'none' as const,
+            ai: 'none' as const,
+            'admin-portal': 'none' as const
+          };
+          
+          // ✅ WICHTIG: Verwende CASCADE-Funktion für automatische Vererbung!
+          const result = await saveDepartmentPermissionsWithCascade(
+            dept.id,
+            dept.name, 
+            defaultPermissions,
+            {}, // Keine User-Overrides initial
+            userEmail,
+            'department' // ✅ CASCADE-Modus: Vererbt zu ALLEN Untergruppen
+          );
+          
+          if (result.success && result.data) {
+            const cascadeInfo = result.data.cascadeInfo;
+            results.push(`✅ Hauptabteilung ${dept.name} mit CASCADE: ${cascadeInfo.updatedSubGroups} Untergruppen automatisch erstellt`);
+            
+            // Zusätzliche Statistik-Logs für bessere Nachvollziehbarkeit
+            console.log(`📊 CASCADE-Statistik für ${dept.name}:`, {
+              mode: cascadeInfo.mode,
+              updatedSubGroups: cascadeInfo.updatedSubGroups,
+              affectedDepartments: result.data.affectedDepartments.length,
+              totalEntries: result.data.updated.length
+            });
+          } else {
+            results.push(`❌ Fehler bei Hauptabteilung ${dept.name}: ${result.message}`);
+          }
+        }
+      }
+      
+      console.log(`✅ Automatische Initialisierung abgeschlossen: ${results.length} Einträge`);
+      
+      res.json({
+        success: true,
+        data: {
+          initializedDepartments: hierarchyResult.data?.departments.length || 0,
+          initializedSubGroups: hierarchyResult.data?.subGroups.length || 0,
+          totalPermissionEntries: results.length,
+          results: results
+        },
+        message: `Automatische Berechtigungsvererbung für ${hierarchyResult.data?.departments.length || 0} Abteilungen initialisiert`
+      });
+      
+    } catch (error) {
+      console.error('❌ Fehler bei automatischer Berechtigungsinitialisierung:', error);
+      res.status(500).json({
+        success: false,
+        error: 'AutoInheritanceError',
+        message: 'Automatische Berechtigungsinitialisierung fehlgeschlagen'
+      });
+    }
+  }
 }
 
 /**
@@ -1981,287 +2463,335 @@ export class AdminPortalOrchestrator {
 export function registerAdminPortalRoutes(router: any) {
   // ===== ENTRA ADMIN CENTER ROUTES =====
   router.post('/admin-portal/entra/fetch-from-admin-center',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleFetchFromAdminCenter
   );
 
   router.get('/admin-portal/entra/check-availability',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleCheckAdminCenterAvailability
   );
 
   // ===== SYNC ROUTES =====
   router.post('/admin-portal/sync/:source',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleSyncSource
   );
 
   router.post('/admin-portal/sync-all',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleSyncAllSources
   );
 
   router.get('/admin-portal/sync/status',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetSyncStatus
   );
 
   router.delete('/admin-portal/sync/:source',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleCancelSync
   );
 
   // ===== USER OVERVIEW ROUTES =====
   router.get('/admin-portal/users',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetUnifiedUsers
   );
 
   router.get('/admin-portal/users/email/:email',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleFindUserByEmail
   );
 
   // ===== UPLOAD ROUTES =====
   router.post('/admin-portal/upload/analyze',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     upload.single('file'),
     AdminPortalOrchestrator.handleAnalyzeUpload
   );
 
   router.post('/admin-portal/upload/process',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     upload.single('file'),
     AdminPortalOrchestrator.handleProcessUpload
   );
 
   router.get('/admin-portal/upload/stats',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetUploadStats
   );
 
   // ===== MANUAL USER ROUTES =====
   router.post('/admin-portal/manual/users',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleCreateManualUser
   );
 
   router.get('/admin-portal/manual/users',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetManualUsers
   );
 
   router.get('/admin-portal/manual/users/:userId',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetManualUserById
   );
 
   router.put('/admin-portal/manual/users/:userId',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleUpdateManualUser
   );
 
   router.delete('/admin-portal/manual/users/:userId',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleDeleteManualUser
   );
 
   // ===== DASHBOARD & STATS ROUTES =====
   router.get('/admin-portal/dashboard/stats',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetDashboardStats
   );
 
   router.get('/admin-portal/stats/advanced',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetAdvancedStats
   );
 
   // ===== CONFLICT MANAGEMENT ROUTES =====
   router.get('/admin-portal/conflicts',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleDetectConflicts
   );
 
   router.post('/admin-portal/conflicts/resolve',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleResolveConflict
   );
 
   // ===== SCHEDULER ROUTES =====
   router.get('/admin-portal/schedules',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetSchedules
   );
 
   router.post('/admin-portal/schedules',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleCreateSchedule
   );
 
   router.put('/admin-portal/schedules/:scheduleId',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleUpdateSchedule
   );
 
   router.delete('/admin-portal/schedules/:scheduleId',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleDeleteSchedule
   );
 
   router.get('/admin-portal/schedules/history',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetSyncHistory
   );
 
   router.get('/admin-portal/schedules/stats',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetSchedulerStats
   );
 
   router.post('/admin-portal/schedules/test-cron',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleTestCronExpression
   );
 
   // ===== TESTING & CONNECTIVITY ROUTES =====
   router.get('/admin-portal/test/connections',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleTestConnections
   );
 
   // ===== EXPORT ROUTES =====
   router.get('/admin-portal/export/users',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleExportAllUsers
   );
 
   // ===== DEVELOPMENT ROUTES =====
   router.post('/admin-portal/test-data',
-    requirePermission('admin', 'all'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGenerateTestData
   );
 
   // ===== PERMISSIONS ROUTES =====
   router.get('/admin-portal/permissions/available',
-    requirePermission('read', 'roles'),
+    requireAdminPortalAccess(),
     AdminPortalOrchestrator.handleGetAvailablePermissions
+  );
+
+  // ===== MY PERMISSIONS ROUTE =====
+  router.get('/admin-portal/my-permissions',
+    requireAuth,  // Nur Authentifizierung, keine spezielle Permission nötig
+    AdminPortalOrchestrator.handleGetMyPermissions
+  );
+
+  // ===== AUTOMATIC INHERITANCE ROUTES =====
+  router.post('/admin-portal/permissions/auto-initialize',
+    requireAdminPortalAdmin(),
+    AdminPortalOrchestrator.handleInitializeAutomaticInheritance
   );
 
   // ===== ROLES ROUTES =====
   router.get('/admin-portal/permissions/roles',
-    requirePermission('read', 'roles'),
+    requireAdminPortalAccess(),
     AdminPortalOrchestrator.handleGetRoles
   );
 
   router.post('/admin-portal/permissions/roles',
-    requirePermission('write', 'roles'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleCreateRole
   );
 
   router.delete('/admin-portal/permissions/roles/:roleId',
-    requirePermission('delete', 'roles'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleDeleteRole
   );
 
   // ===== GROUPS ROUTES =====
   router.get('/admin-portal/permissions/groups',
-    requirePermission('read', 'groups'),
+    requireAdminPortalAccess(),
     AdminPortalOrchestrator.handleGetGroups
   );
 
   router.post('/admin-portal/permissions/groups',
-    requirePermission('write', 'groups'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleCreateGroup
   );
 
   router.delete('/admin-portal/permissions/groups/:groupId',
-    requirePermission('delete', 'groups'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleDeleteGroup
   );
 
   // ===== TOKENS ROUTES =====
   router.get('/admin-portal/permissions/tokens',
-    requirePermission('read', 'tokens'),
+    requireAdminPortalAccess(),
     AdminPortalOrchestrator.handleGetTokens
   );
 
   router.post('/admin-portal/permissions/tokens',
-    requirePermission('write', 'tokens'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleCreateToken
   );
 
   router.post('/admin-portal/permissions/tokens/:tokenId/revoke',
-    requirePermission('delete', 'tokens'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleRevokeToken
   );
 
   // ===== AUDIT ROUTES =====
   router.get('/admin-portal/permissions/audit',
-    requirePermission('read', 'audit'),
+    requireAdminPortalAccess(),
     AdminPortalOrchestrator.handleGetAuditLogs
   );
 
   // ===== DATABASE ROUTES =====
   router.get('/admin-portal/database/info',
-    requirePermission('admin', 'system_settings'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetDatabaseInfo
   );
 
   router.get('/admin-portal/database/schema/:tableName',
-    requirePermission('admin', 'system_settings'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleGetTableSchema
   );
 
   router.delete('/admin-portal/database/clear',
-    requirePermission('admin', 'all'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleClearDatabase
   );
 
   // ===== USER DATA ROUTES (für andere Module wie HR) =====
   router.get('/admin-portal/users/overview',
-    requirePermission('read', 'employee_data'),
+    requireUserDataAccess(),
     AdminPortalOrchestrator.handleGetUsersOverview
   );
 
   router.post('/admin-portal/users/create',
-    requirePermission('write', 'employee_data'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleCreateUser
   );
 
   router.post('/admin-portal/sync/trigger',
-    requirePermission('admin', 'system_settings'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleTriggerSync
   );
 
   // ===== HIERARCHICAL PERMISSIONS ROUTES =====
   router.get('/admin-portal/hierarchy/analyze',
-    requirePermission('admin', 'admin_users'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleAnalyzeHierarchy
   );
 
   router.get('/admin-portal/hierarchy/structure',
-    requirePermission('read', 'groups'),
+    requireAdminPortalAccess(),
     AdminPortalOrchestrator.handleGetHierarchyStructure
   );
 
   router.get('/admin-portal/hierarchy/departments/:departmentId/permissions',
-    requirePermission('read', 'roles'),
+    requireAdminPortalAccess(),
     AdminPortalOrchestrator.handleGetDepartmentPermissions
   );
 
   router.put('/admin-portal/hierarchy/departments/:departmentId/permissions',
-    requirePermission('write', 'roles'),
+    requireAdminPortalAdmin(),
     AdminPortalOrchestrator.handleUpdateDepartmentPermissions
   );
 
+  // ✨ NEUE Route für hierarchische Permissions mit Cascade-Logic
+  router.put('/admin-portal/hierarchy/departments/:departmentId/permissions/cascade',
+    requireAdminPortalAdmin(),
+    AdminPortalOrchestrator.handleUpdateDepartmentPermissionsWithCascade
+  );
+
   router.get('/admin-portal/hierarchy/users/:userId/effective-permissions',
-    requirePermission('read', 'roles'),
+    requireAdminPortalAccess(),
     AdminPortalOrchestrator.handleGetEffectiveUserPermissions
   );
 
   router.get('/admin-portal/hierarchy/modules',
-    requirePermission('read', 'roles'),
+    requireAdminPortalAccess(),
     AdminPortalOrchestrator.handleGetAvailableModules
   );
+
+  router.get('/admin-portal/hierarchy/permissions/all',
+    requireAdminPortalAccess(),
+    AdminPortalOrchestrator.handleGetAllDepartmentPermissions
+  );
+
+  // User-spezifische Permission-Endpoints (mit Auth-Middleware)
+  router.get('/admin-portal/my-permissions',
+    requireAuth,  // 🔐 Authentication-Middleware hinzugefügt
+    AdminPortalOrchestrator.handleGetMyPermissions
+  );
+
+  // 🏗️ AUTO-POPULATION Route
+  router.post('/admin-portal/permissions/populate-users',
+    requireAdminPortalAdmin(),
+    AdminPortalOrchestrator.handlePopulateUsers
+  );
+
+  // 🏢 VOLLSTÄNDIGE EISBÄR-POPULATION Route
+  router.post('/admin-portal/permissions/eisbaer-population',
+    requireAdminPortalAdmin(),
+    AdminPortalOrchestrator.handleEisbaerPopulation
+  );
+
+  // 🔍 DEBUG Route - Zeigt was System wirklich findet
+  router.get('/admin-portal/permissions/debug-discovery',
+    requireAdminPortalAdmin(),
+    AdminPortalOrchestrator.handleDebugDiscovery
+  );
+
 }

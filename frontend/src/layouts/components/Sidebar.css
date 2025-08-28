@@ -160,6 +160,71 @@
   font-size: 0.85rem;
 }
 
+/* Permission Access Level Indicators */
+.access-indicator {
+  margin-left: auto;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.nav-link:hover .access-indicator {
+  opacity: 1;
+}
+
+.permission-loading {
+  color: #9ca3af;
+  font-style: italic;
+  padding: 8px 0;
+  text-align: center;
+}
+
+/* Clean User Info Section */
+.nav-user-info {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.admin-badge {
+  color: #ffd700;
+  font-weight: bold;
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.user-info div {
+  margin-bottom: 4px;
+}
+
+.user-name {
+  font-weight: 500;
+}
+
+.debug-details {
+  margin-top: 8px;
+  font-size: 10px;
+}
+
+.debug-details summary {
+  cursor: pointer;
+  padding: 4px 0;
+  opacity: 0.7;
+}
+
+.debug-details summary:hover {
+  opacity: 1;
+}
+
+.debug-content {
+  background: #1f2937;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow: auto;
+}
+
 /* Module Status Section */
 .module-status {
   display: flex;

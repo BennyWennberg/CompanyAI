@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 import { AuthenticatedRequest, requirePermission } from '../hr/core/auth';
+import { requireAIAccess, requireAIAdmin } from '../../middleware/permission.middleware';
 import { buildRagIndex, retrieveContext, addManualDoc, listDocsWithMeta, readDoc } from './functions/rag';
 import { upload, addOriginalFile, listOriginalFiles, deleteOriginalFile } from './functions/file-upload';
 import { 
@@ -695,9 +696,9 @@ export class AIOrchestrator {
 
 export function registerAIRoutes(router: any) {
   // Bestehende RAG Endpoints
-  router.post('/ai/chat', requirePermission('read', 'all'), AIOrchestrator.handleChat);
-  router.post('/ai/hr-assist', requirePermission('read', 'all'), AIOrchestrator.handleHRAssist);
-  router.post('/ai/rag/reindex', requirePermission('admin', 'all'), async (_req: AuthenticatedRequest, res: Response) => {
+  router.post('/ai/chat', requireAIAccess(), AIOrchestrator.handleChat);
+  router.post('/ai/hr-assist', requireAIAccess(), AIOrchestrator.handleHRAssist);
+  router.post('/ai/rag/reindex', requireAIAdmin(), async (_req: AuthenticatedRequest, res: Response) => {
     try {
       const idx = await buildRagIndex();
       res.json({ success: true, data: { chunks: idx.chunks.length, model: idx.model, createdAt: idx.createdAt } });
@@ -705,7 +706,7 @@ export function registerAIRoutes(router: any) {
       res.status(500).json({ success: false, error: 'RAGIndexError', message: 'Re-Index fehlgeschlagen' });
     }
   });
-  router.get('/ai/rag/docs', requirePermission('read', 'all'), (_req: AuthenticatedRequest, res: Response) => {
+  router.get('/ai/rag/docs', requireAIAccess(), (_req: AuthenticatedRequest, res: Response) => {
     try {
       const list = listDocsWithMeta();
       res.json({ success: true, data: list });
@@ -713,7 +714,7 @@ export function registerAIRoutes(router: any) {
       res.status(500).json({ success: false, error: 'RAGListError', message: e?.message || 'Dokumente konnten nicht geladen werden' });
     }
   });
-  router.get('/ai/rag/doc', requirePermission('read', 'all'), (req: AuthenticatedRequest, res: Response) => {
+  router.get('/ai/rag/doc', requireAIAccess(), (req: AuthenticatedRequest, res: Response) => {
     try {
       const p = String((req.query as any)?.path || '');
       const doc = readDoc(p);
@@ -722,7 +723,7 @@ export function registerAIRoutes(router: any) {
       res.status(400).json({ success: false, error: 'RAGReadDocError', message: e?.message || 'Dokument konnte nicht geladen werden' });
     }
   });
-  router.get('/ai/rag/doc-raw', requirePermission('read', 'all'), (req: AuthenticatedRequest, res: Response) => {
+  router.get('/ai/rag/doc-raw', requireAIAccess(), (req: AuthenticatedRequest, res: Response) => {
     try {
       const p = String((req.query as any)?.path || '');
       const doc = readDoc(p);
@@ -732,31 +733,31 @@ export function registerAIRoutes(router: any) {
       res.status(400).send(e?.message || 'Dokument konnte nicht geladen werden');
     }
   });
-  router.post('/ai/rag/manual-doc', requirePermission('admin', 'all'), AIOrchestrator.handleAddManualDoc);
+  router.post('/ai/rag/manual-doc', requireAIAdmin(), AIOrchestrator.handleAddManualDoc);
 
   // NEU: Original-Dateien Endpoints
-  router.post('/ai/rag/upload-file', requirePermission('admin', 'all'), upload.single('file'), AIOrchestrator.handleUploadFile);
-  router.get('/ai/rag/originals', requirePermission('read', 'all'), AIOrchestrator.handleListOriginals);
-  router.get('/ai/rag/download/original/:filename', requirePermission('read', 'all'), AIOrchestrator.handleDownloadOriginal);
-  router.delete('/ai/rag/originals/:filename', requirePermission('admin', 'all'), AIOrchestrator.handleDeleteOriginal);
+  router.post('/ai/rag/upload-file', requireAIAdmin(), upload.single('file'), AIOrchestrator.handleUploadFile);
+  router.get('/ai/rag/originals', requireAIAccess(), AIOrchestrator.handleListOriginals);
+  router.get('/ai/rag/download/original/:filename', requireAIAccess(), AIOrchestrator.handleDownloadOriginal);
+  router.delete('/ai/rag/originals/:filename', requireAIAdmin(), AIOrchestrator.handleDeleteOriginal);
 
   // NEU: Chat-Session Management Endpoints
-  router.post('/ai/sessions', requirePermission('read', 'all'), AIOrchestrator.handleCreateSession);
-  router.get('/ai/sessions/search', requirePermission('read', 'all'), AIOrchestrator.handleSearchSessions);
-  router.get('/ai/sessions/tags', requirePermission('read', 'all'), AIOrchestrator.handleGetAllTags);
-  router.get('/ai/sessions/:sessionId', requirePermission('read', 'all'), AIOrchestrator.handleGetSession);
-  router.put('/ai/sessions/:sessionId', requirePermission('read', 'all'), AIOrchestrator.handleUpdateSession);
-  router.delete('/ai/sessions/:sessionId', requirePermission('read', 'all'), AIOrchestrator.handleDeleteSession);
+  router.post('/ai/sessions', requireAIAccess(), AIOrchestrator.handleCreateSession);
+  router.get('/ai/sessions/search', requireAIAccess(), AIOrchestrator.handleSearchSessions);
+  router.get('/ai/sessions/tags', requireAIAccess(), AIOrchestrator.handleGetAllTags);
+  router.get('/ai/sessions/:sessionId', requireAIAccess(), AIOrchestrator.handleGetSession);
+  router.put('/ai/sessions/:sessionId', requireAIAccess(), AIOrchestrator.handleUpdateSession);
+  router.delete('/ai/sessions/:sessionId', requireAIAccess(), AIOrchestrator.handleDeleteSession);
 
   // NEU: Voice Integration Endpoints
-  router.post('/ai/voice/speech-to-text', requirePermission('read', 'all'), upload.single('audio'), AIOrchestrator.handleSpeechToText);
-  router.post('/ai/voice/text-to-speech', requirePermission('read', 'all'), AIOrchestrator.handleTextToSpeech);
-  router.get('/ai/voice/audio/:filename', requirePermission('read', 'all'), AIOrchestrator.handleGetAudio);
-  router.post('/ai/voice/cleanup', requirePermission('admin', 'all'), AIOrchestrator.handleVoiceCleanup);
+  router.post('/ai/voice/speech-to-text', requireAIAccess(), upload.single('audio'), AIOrchestrator.handleSpeechToText);
+  router.post('/ai/voice/text-to-speech', requireAIAccess(), AIOrchestrator.handleTextToSpeech);
+  router.get('/ai/voice/audio/:filename', requireAIAccess(), AIOrchestrator.handleGetAudio);
+  router.post('/ai/voice/cleanup', requireAIAdmin(), AIOrchestrator.handleVoiceCleanup);
 
   // NEU: Hybrid RAG Analytics Endpoints
-  router.get('/ai/rag/hybrid/stats', requirePermission('read', 'all'), AIOrchestrator.handleHybridRagStats);
-  router.post('/ai/rag/hybrid/compare', requirePermission('read', 'all'), AIOrchestrator.handleSearchComparison);
+  router.get('/ai/rag/hybrid/stats', requireAIAccess(), AIOrchestrator.handleHybridRagStats);
+  router.post('/ai/rag/hybrid/compare', requireAIAccess(), AIOrchestrator.handleSearchComparison);
 }
 
 // --- Provider Helpers ---

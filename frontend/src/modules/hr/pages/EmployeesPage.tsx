@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/HRPages.css';
-import { usePermissions } from '../../../layouts/components/Sidebar';
+import { useEnhancedPermissions } from '../../../context/EnhancedPermissionContext';
 import SchemaManagerModal from '../components/SchemaManagerModal';
 import AdditionalInfoEditor from '../components/AdditionalInfoEditor';
 
@@ -52,7 +52,16 @@ interface APIResponse<T> {
 
 const EmployeesPage: React.FC = () => {
   // 🔐 PERMISSION HOOKS
-  const { hasActionAccess, getCurrentUserRole } = usePermissions();
+  const { hasModuleAccess, hasAdminAccess } = useEnhancedPermissions();
+  
+  // Helper functions for compatibility with old permission system
+  const hasMinimumAccess = (level: 'access' | 'admin' | 'write') => {
+    if (level === 'access' || level === 'write') return hasModuleAccess('hr');
+    if (level === 'admin') return hasAdminAccess('hr');
+    return false;
+  };
+  
+  const isAdmin = () => hasAdminAccess('hr');
   
   const [employees, setEmployees] = useState<CombinedUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +83,10 @@ const EmployeesPage: React.FC = () => {
   const [schemaManagerOpen, setSchemaManagerOpen] = useState(false);
   const [additionalInfoEditorOpen, setAdditionalInfoEditorOpen] = useState(false);
   const [additionalInfoFields, setAdditionalInfoFields] = useState<any[]>([]);
+  
+  // Directory Sync States
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   useEffect(() => {
     loadEmployees();
@@ -99,7 +112,7 @@ const EmployeesPage: React.FC = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/admin-portal/users/overview', {
+      const response = await fetch('http://localhost:5000/api/hr/employees', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -138,6 +151,53 @@ const EmployeesPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Fehler beim Laden der Zusatzinformationen:', error);
+    }
+  };
+
+  // Directory Synchronization
+  const syncDirectoryStructure = async () => {
+    try {
+      setSyncLoading(true);
+      setSyncStatus('Synchronisiere Ordnerstruktur...');
+
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setSyncStatus('❌ Keine Authentifizierung gefunden');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/hr/directories/initialize', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        const { created, skipped, errors } = result.data;
+        setSyncStatus(`✅ Synchronisation abgeschlossen: ${created} erstellt, ${skipped} übersprungen, ${errors} Fehler`);
+        
+        // Automatically clear status after 5 seconds
+        setTimeout(() => {
+          setSyncStatus(null);
+        }, 5000);
+      } else {
+        setSyncStatus(`❌ ${result.message || 'Synchronisation fehlgeschlagen'}`);
+        setTimeout(() => {
+          setSyncStatus(null);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('Fehler bei der Ordner-Synchronisation:', error);
+      setSyncStatus('❌ Verbindungsfehler bei der Synchronisation');
+      setTimeout(() => {
+        setSyncStatus(null);
+      }, 5000);
+    } finally {
+      setSyncLoading(false);
     }
   };
 
@@ -272,8 +332,21 @@ const EmployeesPage: React.FC = () => {
           <p>Verwalte alle Mitarbeiter aus verschiedenen Quellen</p>
         </div>
         <div className="page-actions">
+          {/* 🔐 PERMISSION-GUARD: Ordnerstruktur-Synchronisation nur für Administratoren */}
+          {hasMinimumAccess('write') && (
+            <button 
+              className="btn btn-secondary"
+              onClick={syncDirectoryStructure}
+              disabled={syncLoading}
+              title="Synchronisiert die Ordnerstruktur für alle Benutzer - erstellt fehlende Ordner automatisch"
+              style={{ marginRight: '8px' }}
+            >
+              {syncLoading ? '🔄' : '📁'} {syncLoading ? 'Synchronisiere...' : 'Ordner synchronisieren'}
+            </button>
+          )}
+
           {/* 🔐 PERMISSION-GUARD: Zusätzliche Informationen nur mit 'write' Berechtigung */}
-          {hasActionAccess('hr.employees', 'write') && (
+          {hasMinimumAccess('write') && (
             <button 
               className="btn btn-primary"
               onClick={() => setSchemaManagerOpen(true)}
@@ -292,17 +365,33 @@ const EmployeesPage: React.FC = () => {
             alignItems: 'center',
             gap: '8px'
           }}>
-            <span>🎭 {getCurrentUserRole()}</span>
+            <span>🎭 {isAdmin() ? 'Administrator' : 'User'}</span>
             <span>|</span>
             <div style={{ display: 'flex', gap: '4px' }}>
-              {hasActionAccess('hr.employees', 'read') && <span title="Lese-Berechtigung">👁️</span>} 
-              {hasActionAccess('hr.employees', 'write') && <span title="Schreib-Berechtigung">✏️</span>} 
-              {hasActionAccess('hr.employees', 'create') && <span title="Erstell-Berechtigung">➕</span>} 
-              {hasActionAccess('hr.employees', 'delete') && <span title="Lösch-Berechtigung">🗑️</span>}
+              {hasModuleAccess('hr') && <span title="Lese-Berechtigung">👁️</span>} 
+              {hasMinimumAccess('write') && <span title="Schreib-Berechtigung">✏️</span>} 
+              {hasMinimumAccess('write') && <span title="Erstell-Berechtigung">➕</span>} 
+              {(hasMinimumAccess('admin') || isAdmin()) && <span title="Lösch-Berechtigung">🗑️</span>}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Sync Status Display */}
+      {syncStatus && (
+        <div className="sync-status" style={{
+          margin: '16px 0',
+          padding: '12px',
+          borderRadius: '6px',
+          backgroundColor: syncStatus.startsWith('✅') ? '#f0fdf4' : '#fef2f2',
+          border: syncStatus.startsWith('✅') ? '1px solid #bbf7d0' : '1px solid #fecaca',
+          color: syncStatus.startsWith('✅') ? '#166534' : '#dc2626',
+          fontSize: '14px',
+          fontWeight: '500'
+        }}>
+          {syncStatus}
+        </div>
+      )}
 
       <div className="content-section">
         {loading && (
@@ -663,7 +752,7 @@ const EmployeesPage: React.FC = () => {
                                   📥
                                 </button>
                                 {/* 🔐 PERMISSION-GUARD: Document Delete nur mit 'delete' Berechtigung */}
-                                {hasActionAccess('hr.employees', 'delete') && (
+                                {(hasMinimumAccess('admin') || isAdmin()) && (
                                   <button 
                                     className="btn-icon delete" 
                                     onClick={() => deleteDocument(doc.id, selectedEmployee.id)}

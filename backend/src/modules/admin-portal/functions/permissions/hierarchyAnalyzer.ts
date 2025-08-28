@@ -165,9 +165,21 @@ function parseDepartmentValue(deptValue: string): {
   // Format: "Entfeuchtung | Leckortung"
   if (deptValue.includes(' | ')) {
     const parts = deptValue.split(' | ');
+    const mainDept = parts[0].trim();
+    const subDept = parts[1].trim();
+    
+    // 🔧 REDUNDANTE Einträge erkennen: "Entfeuchtung | Entfeuchtung" → nur "Entfeuchtung"
+    if (mainDept.toLowerCase() === subDept.toLowerCase()) {
+      console.log(`🧹 REDUNDANT erkannt: "${deptValue}" → behandle als Hauptabteilung "${mainDept}"`);
+      return {
+        mainDepartment: mainDept,
+        subDepartment: null      // ← NULL statt redundant!
+      };
+    }
+    
     return {
-      mainDepartment: parts[0].trim(),
-      subDepartment: parts[1].trim()
+      mainDepartment: mainDept,
+      subDepartment: subDept
     };
   }
   
@@ -201,9 +213,12 @@ function generateDepartmentId(deptName: string): string {
 
 /**
  * Helper: SubGroup-ID generieren  
+ * ✅ EINHEITLICH mit departmentPermissions.ts - verwendet dept_ Prefix
  */
 function generateSubGroupId(mainDept: string, subDept: string): string {
-  return `subgrp_${mainDept.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${subDept.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+  const cleanDeptName = mainDept.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const cleanSubGroupName = subDept.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  return `dept_${cleanDeptName}_${cleanSubGroupName}`;
 }
 
 /**

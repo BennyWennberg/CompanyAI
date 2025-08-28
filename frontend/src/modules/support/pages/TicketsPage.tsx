@@ -6,12 +6,15 @@ interface Ticket {
   id: string;
   title: string;
   description: string;
-  category: 'technical' | 'account' | 'billing' | 'general';
+  category: 'hardware' | 'software' | 'network' | 'access' | 'phone' | 'other';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'open' | 'in_progress' | 'waiting_customer' | 'resolved' | 'closed';
   customerId: string;
   customerEmail: string;
+  customerName?: string;
   assignedTo?: string;
+  location?: string;
+  deviceInfo?: string;
   createdAt: string;
   updatedAt: string;
   resolvedAt?: string;
@@ -118,12 +121,14 @@ const TicketsPage: React.FC = () => {
 
   const getCategoryIcon = (category: Ticket['category']) => {
     const icons = {
-      technical: '🔧',
-      account: '👤',
-      billing: '💰',
-      general: '📝'
+      hardware: '🖥️',
+      software: '💻',
+      network: '🌐',
+      access: '🔐',
+      phone: '📞',
+      other: '📋'
     };
-    return icons[category] || '📝';
+    return icons[category] || '📋';
   };
 
   const getPriorityClass = (priority: Ticket['priority']) => {
@@ -138,7 +143,7 @@ const TicketsPage: React.FC = () => {
     const labels = {
       open: 'Offen',
       in_progress: 'In Bearbeitung',
-      waiting_customer: 'Wartet auf Kunde',
+      waiting_customer: 'Wartet auf Mitarbeiter',
       resolved: 'Gelöst',
       closed: 'Geschlossen'
     };
@@ -157,10 +162,12 @@ const TicketsPage: React.FC = () => {
 
   const getCategoryLabel = (category: Ticket['category']) => {
     const labels = {
-      technical: 'Technisch',
-      account: 'Account',
-      billing: 'Abrechnung',
-      general: 'Allgemein'
+      hardware: 'Hardware',
+      software: 'Software',
+      network: 'Netzwerk',
+      access: 'Zugriff',
+      phone: 'Telefon',
+      other: 'Sonstige'
     };
     return labels[category] || category;
   };
@@ -216,7 +223,7 @@ const TicketsPage: React.FC = () => {
               <option value="">Alle Status</option>
               <option value="open">Offen</option>
               <option value="in_progress">In Bearbeitung</option>
-              <option value="waiting_customer">Wartet auf Kunde</option>
+              <option value="waiting_customer">Wartet auf Mitarbeiter</option>
               <option value="resolved">Gelöst</option>
               <option value="closed">Geschlossen</option>
             </select>
@@ -230,10 +237,12 @@ const TicketsPage: React.FC = () => {
               className="filter-select"
             >
               <option value="">Alle Kategorien</option>
-              <option value="technical">Technisch</option>
-              <option value="account">Account</option>
-              <option value="billing">Abrechnung</option>
-              <option value="general">Allgemein</option>
+              <option value="hardware">Hardware</option>
+              <option value="software">Software</option>
+              <option value="network">Netzwerk</option>
+              <option value="access">Zugriff</option>
+              <option value="phone">Telefon</option>
+              <option value="other">Sonstige</option>
             </select>
           </div>
           
@@ -362,7 +371,7 @@ const TicketsPage: React.FC = () => {
                         className="btn btn-small btn-secondary"
                         onClick={() => updateTicketStatus(ticket.id, 'waiting_customer')}
                       >
-                        ⏸️ Warten auf Kunde
+                        ⏸️ Warten auf Mitarbeiter
                       </button>
                       <button 
                         className="btn btn-small btn-success"
@@ -391,7 +400,10 @@ const TicketsPage: React.FC = () => {
                     </button>
                   )}
                   
-                  <button className="btn btn-small btn-outline">
+                  <button 
+                    className="btn btn-small btn-outline"
+                    onClick={() => navigate(`/support/tickets/${ticket.id}`)}
+                  >
                     👁️ Details
                   </button>
                 </div>

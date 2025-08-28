@@ -9,36 +9,12 @@ import {
   PaginatedResponse 
 } from '../types';
 
-// Mock-Ticket-Daten
-const mockTickets: Ticket[] = [
-  {
-    id: 'ticket_001',
-    title: 'Login-Probleme mit neuer App',
-    description: 'Kunde kann sich nicht in die neue Mobile App einloggen',
-    category: 'technical',
-    priority: 'high',
-    status: 'open',
-    customerId: 'cust_001',
-    customerEmail: 'kunde@example.com',
-    assignedTo: 'support@company.com',
-    createdAt: new Date('2023-12-01'),
-    updatedAt: new Date('2023-12-01')
-  },
-  {
-    id: 'ticket_002',
-    title: 'Rechnungsanfrage für Dezember',
-    description: 'Kunde benötigt detaillierte Rechnung für Dezember 2023',
-    category: 'billing',
-    priority: 'medium',
-    status: 'resolved',
-    customerId: 'cust_002',
-    customerEmail: 'billing@kunde.de',
-    assignedTo: 'finance@company.com',
-    createdAt: new Date('2023-12-05'),
-    updatedAt: new Date('2023-12-06'),
-    resolvedAt: new Date('2023-12-06')
-  }
-];
+import { 
+  getAllTickets, 
+  addTicket, 
+  updateTicket as updateTicketInStore,
+  generateTicketId 
+} from '../core/dataStore';
 
 /**
  * Validiert Ticket-Daten
@@ -58,7 +34,7 @@ function validateTicketData(ticket: CreateTicketRequest): string[] {
     errors.push('Beschreibung darf maximal 2000 Zeichen lang sein');
   }
 
-  if (!ticket.category || !['technical', 'account', 'billing', 'general'].includes(ticket.category)) {
+  if (!ticket.category || !['hardware', 'software', 'network', 'access', 'phone', 'other'].includes(ticket.category)) {
     errors.push('Ungültige Kategorie');
   }
 
@@ -103,14 +79,14 @@ export async function createTicket(request: CreateTicketRequest): Promise<APIRes
     }
 
     const newTicket: Ticket = {
-      id: `ticket_${String(mockTickets.length + 1).padStart(3, '0')}`,
+      id: generateTicketId(),
       ...request,
       status: 'open',
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    mockTickets.push(newTicket);
+    addTicket(newTicket);
 
     return {
       success: true,
@@ -143,7 +119,7 @@ export async function searchTickets(request: TicketSearchRequest): Promise<APIRe
       offset = 0 
     } = request;
 
-    let filteredTickets = [...mockTickets];
+    let filteredTickets = getAllTickets();
 
     // Filter anwenden
     if (status) {
@@ -199,24 +175,19 @@ export async function searchTickets(request: TicketSearchRequest): Promise<APIRe
  */
 export async function updateTicket(ticketId: string, updates: UpdateTicketRequest): Promise<APIResponse<Ticket>> {
   try {
-    const ticketIndex = mockTickets.findIndex(ticket => ticket.id === ticketId);
+    const resolvedAt = updates.status === 'resolved' ? new Date() : undefined;
+    const updatedTicket = updateTicketInStore(ticketId, {
+      ...updates,
+      ...(resolvedAt && { resolvedAt })
+    });
 
-    if (ticketIndex === -1) {
+    if (!updatedTicket) {
       return {
         success: false,
         error: 'NotFound',
         message: `Kein Ticket mit ID ${ticketId} gefunden`
       };
     }
-
-    const updatedTicket = {
-      ...mockTickets[ticketIndex],
-      ...updates,
-      updatedAt: new Date(),
-      ...(updates.status === 'resolved' && { resolvedAt: new Date() })
-    };
-
-    mockTickets[ticketIndex] = updatedTicket;
 
     return {
       success: true,

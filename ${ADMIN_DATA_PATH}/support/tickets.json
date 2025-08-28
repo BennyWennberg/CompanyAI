@@ -1,0 +1,49 @@
+[
+  {
+    "id": "ticket_001",
+    "title": "Laptop startet nicht - Hardware-Problem",
+    "description": "Laptop von Max Mustermann startet seit heute Morgen nicht mehr. Beim Drücken der Power-Taste passiert nichts. Gestern hat noch alles funktioniert. Dringend für Präsentation heute Nachmittag benötigt.",
+    "category": "hardware",
+    "priority": "high",
+    "status": "in_progress",
+    "customerId": "emp_001",
+    "customerEmail": "max.mustermann@company.com",
+    "customerName": "Max Mustermann",
+    "location": "Büro 2.15, IT-Abteilung",
+    "deviceInfo": "ThinkPad X1 Carbon, Service-Tag: ABC123",
+    "assignedTo": "Klaus Weber (IT-Support)",
+    "createdAt": "2023-12-08T09:15:00.000Z",
+    "updatedAt": "2023-12-08T14:30:00.000Z"
+  },
+  {
+    "id": "ticket_002",
+    "title": "VPN-Zugang funktioniert nicht - Netzwerk-Problem",
+    "description": "Seit der Umstellung auf neue VPN-Software kann ich mich nicht mehr von zu Hause einloggen. Fehlermeldung: \"Authentifizierung fehlgeschlagen\". Dringend für Home-Office benötigt.",
+    "category": "network",
+    "priority": "medium",
+    "status": "resolved",
+    "customerId": "emp_002",
+    "customerEmail": "anna.schmidt@company.com",
+    "customerName": "Anna Schmidt",
+    "location": "Home-Office / Marketing",
+    "assignedTo": "Maria Müller (IT-Admin)",
+    "createdAt": "2023-12-07T08:30:00.000Z",
+    "updatedAt": "2023-12-07T16:20:00.000Z",
+    "resolvedAt": "2023-12-07T16:20:00.000Z"
+  },
+  {
+    "id": "ticket_003",
+    "title": "Microsoft Office Installation - Software-Support",
+    "description": "Benötige Microsoft Office 365 auf neuem Arbeitsplatz-PC. Zusätzlich Zugang zu SharePoint und Teams erforderlich.",
+    "category": "software",
+    "priority": "medium",
+    "status": "open",
+    "customerId": "emp_003",
+    "customerEmail": "thomas.jung@company.com",
+    "customerName": "Thomas Jung",
+    "location": "Büro 1.08, Vertrieb",
+    "deviceInfo": "Dell OptiPlex 7090, Windows 11 Pro",
+    "createdAt": "2023-12-08T11:45:00.000Z",
+    "updatedAt": "2023-12-08T11:45:00.000Z"
+  }
+]

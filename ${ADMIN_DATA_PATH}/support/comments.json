@@ -1,0 +1,102 @@
+[
+  {
+    "id": "comment_001",
+    "ticketId": "ticket_001",
+    "authorId": "sup_001",
+    "authorName": "Klaus Weber",
+    "content": "Ticket erhalten. Gehe um 15:00 vor Ort um Hardware zu prüfen.",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2023-12-08T14:30:00.000Z"
+  },
+  {
+    "id": "comment_002",
+    "ticketId": "ticket_001",
+    "authorId": "sup_001",
+    "authorName": "Klaus Weber",
+    "content": "Hardware vor Ort geprüft. Netzteil defekt - keine Stromzufuhr. Bestelle Ersatz-Netzteil (Lieferzeit: 1 Tag).",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2023-12-08T15:15:00.000Z"
+  },
+  {
+    "id": "comment_003",
+    "ticketId": "ticket_001",
+    "authorId": "sup_001",
+    "authorName": "Klaus Weber",
+    "content": "Ersatz-Netzteil angekommen. Installation und Test erfolgreich. Laptop funktioniert wieder einwandfrei.",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2023-12-08T16:45:00.000Z"
+  },
+  {
+    "id": "comment_004",
+    "ticketId": "ticket_002",
+    "authorId": "sup_002",
+    "authorName": "Maria Müller",
+    "content": "VPN-Konfiguration geprüft. Benutzer verwendet noch alten VPN-Client.",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2023-12-07T10:15:00.000Z"
+  },
+  {
+    "id": "comment_005",
+    "ticketId": "ticket_002",
+    "authorId": "sup_002",
+    "authorName": "Maria Müller",
+    "content": "Telefonisch mit Benutzer verbunden. Neue VPN-Software installiert und konfiguriert. Test erfolgreich.",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2023-12-07T16:20:00.000Z"
+  },
+  {
+    "id": "comment_840302",
+    "ticketId": "ticket_001",
+    "authorId": "1",
+    "authorName": "admin@company.com",
+    "content": "Das ist eine interne Notiz - sollte im Chat erscheinen aber NICHT per E-Mail versendet werden.",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2025-08-25T13:50:40.302Z"
+  },
+  {
+    "id": "comment_849566",
+    "ticketId": "ticket_001",
+    "authorId": "1",
+    "authorName": "admin@company.com",
+    "content": "Interne Notiz Test - nur im Chat sichtbar",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2025-08-25T13:50:49.566Z"
+  },
+  {
+    "id": "comment_990304",
+    "ticketId": "ticket_001",
+    "authorId": "1",
+    "authorName": "admin@company.com",
+    "content": "Interne Notiz Test - nur im Chat sichtbar",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2025-08-25T13:53:10.304Z"
+  },
+  {
+    "id": "comment_080611",
+    "ticketId": "ticket_001",
+    "authorId": "1",
+    "authorName": "admin@company.com",
+    "content": "hallo",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2025-08-25T13:54:40.611Z"
+  },
+  {
+    "id": "comment_090318",
+    "ticketId": "ticket_001",
+    "authorId": "1",
+    "authorName": "admin@company.com",
+    "content": "test",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2025-08-25T13:54:50.318Z"
+  }
+]

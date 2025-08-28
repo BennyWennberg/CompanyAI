@@ -222,31 +222,11 @@ export function updateManualDevice(id: string, updates: Partial<CreateManualDevi
 }
 
 /**
- * Seedet die manuellen Benutzer mit den bisherigen HR-Mock-Mitarbeitern (nur, wenn noch leer)
+ * Seedet die manuellen Benutzer - Demo-Seeding entfernt
  */
 export function seedManualUsersIfEmpty(): void {
-  if (manualUsers.length > 0) {
-    return;
-  }
-
-  const seed = [
-    {
-      displayName: 'Max Mustermann',
-      userPrincipalName: 'max.mustermann@company.com',
-      mail: 'max.mustermann@company.com',
-      department: 'IT',
-      jobTitle: 'Senior Developer',
-      accountEnabled: true
-    }
-  ] as CreateManualUserRequest[];
-
-  for (const u of seed) {
-    try {
-      createManualUser(u, 'system-seed');
-    } catch {
-      // ignorieren, falls durch Duplikat-Prüfung verhindert
-    }
-  }
+  // Demo-Seeding entfernt - nur echte User werden verwaltet
+  return;
 }
 
 /**

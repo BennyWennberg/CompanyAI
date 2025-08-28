@@ -147,29 +147,8 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Test-Manual-User erstellen (für Demo/Development)
+ * Test-Manual-User erstellen (für Demo/Development) - ENTFERNT
  */
 export function createTestManualUsers() {
-  return [
-    {
-      id: 'manual-001',
-      username: 'max.mustermann',
-      email: 'max.mustermann@company.com',
-      displayName: 'Max Mustermann',
-      department: 'HR',
-      jobTitle: 'HR Specialist',
-      // Password: "password123" -> gehashed
-      passwordHash: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqyPuHapxHvNiQa.B.k2Wti'
-    },
-    {
-      id: 'manual-002', 
-      username: 'anna.admin',
-      email: 'anna.admin@company.com',
-      displayName: 'Anna Administrator',
-      department: 'IT',
-      jobTitle: 'System Administrator',
-      // Password: "admin123" -> gehashed
-      passwordHash: '$2b$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
-    }
-  ];
+  return [];
 }

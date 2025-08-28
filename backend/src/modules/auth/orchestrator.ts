@@ -182,12 +182,36 @@ export class AuthOrchestrator {
   }
 
   /**
-   * Entra AD OAuth Callback
+   * Entra AD OAuth Callback (Redirect)
    * GET /api/auth/entra/callback
    */
   static async handleEntraCallback(req: Request, res: Response) {
     try {
       const { code, state } = req.query;
+      
+      if (!code) {
+        const errorUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=missing_code`;
+        return res.redirect(errorUrl);
+      }
+
+      // Redirect zu Frontend Callback-Handler mit Code
+      const callbackUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback/entra?code=${encodeURIComponent(code as string)}&state=${encodeURIComponent(state as string || '')}`;
+      res.redirect(callbackUrl);
+      
+    } catch (error) {
+      console.error('Entra Callback Redirect Fehler:', error);
+      const errorUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=callback_failed`;
+      res.redirect(errorUrl);
+    }
+  }
+
+  /**
+   * Entra AD OAuth Callback (JSON API)
+   * POST /api/auth/entra-callback
+   */
+  static async handleEntraCallbackJson(req: Request, res: Response) {
+    try {
+      const { code, state } = req.body;
       
       if (!code) {
         return res.status(400).json({
@@ -199,21 +223,61 @@ export class AuthOrchestrator {
 
       const result = await handleEntraCallback(code as string, state as string);
       
-      if (result.success && result.data) {
-        // JWT Token generieren
-        const jwtToken = generateAuthToken(result.data);
-        
-        // Redirect zum Frontend mit Token
-        const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/success?token=${jwtToken}`;
-        res.redirect(redirectUrl);
+      if (result.success && result.data && result.token) {
+        return res.json({
+          success: true,
+          token: result.token,
+          user: result.data,
+          message: result.message
+        });
       } else {
-        const errorUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=${result.error}`;
-        res.redirect(errorUrl);
+        return res.status(401).json({
+          success: false,
+          error: result.error,
+          message: result.message
+        });
       }
     } catch (error) {
-      console.error('Entra Callback Fehler:', error);
-      const errorUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=callback_failed`;
-      res.redirect(errorUrl);
+      console.error('Entra Callback JSON Fehler:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'CallbackProcessingError',
+        message: 'Fehler bei der Callback-Verarbeitung'
+      });
+    }
+  }
+
+  /**
+   * Entra ID Konfiguration testen
+   * GET /api/auth/test-entra-config
+   */
+  static async handleTestEntraConfig(req: Request, res: Response) {
+    try {
+      const { getEntraConfig } = require('./functions/entraAuth');
+      const config = getEntraConfig();
+      
+      // Test-Response mit Konfigurationsstatus (ohne Secrets)
+      res.json({
+        success: true,
+        config: {
+          enabled: config.enabled,
+          hasClientId: !!config.clientId,
+          hasClientSecret: !!config.clientSecret,  
+          hasTenantId: !!config.tenantId,
+          redirectUri: config.redirectUri,
+          scope: config.scope
+        },
+        message: config.enabled 
+          ? 'Entra ID ist aktiviert' 
+          : 'Entra ID ist deaktiviert (ENTRA_SYNC_ENABLED != true)'
+      });
+    } catch (error) {
+      console.error('Entra Config Test Fehler:', error);
+      res.status(500).json({
+        success: false,
+        error: 'ConfigTestError',
+        message: 'Fehler beim Testen der Entra ID Konfiguration'
+      });
     }
   }
 
@@ -301,22 +365,75 @@ export class AuthOrchestrator {
       });
     }
   }
+  /**
+   * Provider-Übersicht
+   * GET /api/auth/providers
+   */
+  static async handleGetProviders(req: Request, res: Response) {
+    try {
+      const providers = [
+        {
+          id: 'admin',
+          name: 'Administrator',
+          description: 'Direct admin access with token',
+          enabled: true,
+          icon: '🔑'
+        },
+        {
+          id: 'manual', 
+          name: 'Username/Password',
+          description: 'Local user database',
+          enabled: true,
+          icon: '👤'
+        },
+        {
+          id: 'entra',
+          name: 'Microsoft Entra ID',
+          description: 'Corporate Microsoft accounts',
+          enabled: process.env.ENTRA_SYNC_ENABLED === 'true',
+          icon: '🏢'
+        },
+        {
+          id: 'ldap',
+          name: 'Active Directory',
+          description: 'LDAP domain authentication', 
+          enabled: process.env.LDAP_ENABLED === 'true',
+          icon: '🖥️'
+        }
+      ];
+
+      res.json({
+        success: true,
+        data: providers,
+        message: 'Authentication providers loaded'
+      });
+    } catch (error) {
+      console.error('Provider list error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'InternalServerError',
+        message: 'Error loading authentication providers'
+      });
+    }
+  }
 }
 
 /**
- * Auth Routes registrieren
+ * Registriert alle Auth-Routes
  */
 export function registerAuthRoutes(router: any) {
-  // Auth Provider Endpunkte
+  // Provider-spezifische Login Endpoints
   router.post('/auth/admin-token', AuthOrchestrator.handleAdminTokenLogin);
   router.post('/auth/manual-login', AuthOrchestrator.handleManualLogin);
   router.post('/auth/entra-login', AuthOrchestrator.handleEntraLogin);
   router.post('/auth/ldap-login', AuthOrchestrator.handleLdapLogin);
   
-  // OAuth Callback (ohne Auth-Middleware)
-  router.get('/auth/entra/callback', AuthOrchestrator.handleEntraCallback);
+  // Entra ID OAuth Callbacks
+  router.get('/auth/entra/callback', AuthOrchestrator.handleEntraCallback);  // Microsoft redirect
+  router.post('/auth/entra-callback', AuthOrchestrator.handleEntraCallbackJson);  // Frontend API call
   
-  // Info Endpunkte
+  // Provider-Übersicht und Test-Endpoints  
   router.get('/auth/providers', AuthOrchestrator.handleGetProviders);
   router.get('/auth/test-tokens', AuthOrchestrator.handleGetTestTokens);
+  router.get('/auth/test-entra-config', AuthOrchestrator.handleTestEntraConfig);
 }

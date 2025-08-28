@@ -5,8 +5,12 @@
 **Base URL:** `http://localhost:5000/api/support`  
 **Authentifizierung:** Bearer Token erforderlich  
 **Content-Type:** `application/json`  
-**Version:** 1.0.0  
+**Version:** 1.1.0  
 **Letzte Aktualisierung:** 8. Dezember 2024
+
+## 🎯 **Internes IT-Ticketsystem**
+
+Das Support-Modul wurde zu einem **internen IT-Ticketsystem** erweitert, das speziell für die IT-Unterstützung von Mitarbeitern entwickelt wurde.
 
 ## 🔐 Authentifizierung
 
@@ -190,6 +194,142 @@ PUT /api/support/tickets/:ticketId
 
 **Berechtigungen:** Authentifizierter Benutzer
 
+## 🔍 **Neue Endpunkte: Ticket-Details & Kommentare (v1.1)**
+
+### 4. Einzelnes Ticket mit Details abrufen
+
+```http
+GET /api/support/tickets/:ticketId/details
+```
+
+**Berechtigungen:** Authentifizierter Benutzer
+
+#### URL-Parameter
+| Parameter | Typ | Beschreibung |
+|-----------|-----|--------------|
+| `ticketId` | string | Eindeutige Ticket-ID |
+
+#### Beispiel-Request
+```bash
+curl -X GET "http://localhost:5000/api/support/tickets/ticket_001/details" \
+  -H "Authorization: Bearer $adminToken"
+```
+
+#### Beispiel-Response
+```json
+{
+  "success": true,
+  "data": {
+    "id": "ticket_001",
+    "title": "Laptop startet nicht - Hardware-Problem",
+    "description": "Laptop startet seit heute Morgen nicht mehr...",
+    "category": "hardware",
+    "priority": "high",
+    "status": "in_progress",
+    "customerId": "emp_001",
+    "customerEmail": "max.mustermann@company.com",
+    "customerName": "Max Mustermann",
+    "location": "Büro 2.15, IT-Abteilung",
+    "deviceInfo": "ThinkPad X1 Carbon, Service-Tag: ABC123",
+    "assignedTo": "Klaus Weber (IT-Support)",
+    "createdAt": "2023-12-08T09:15:00.000Z",
+    "updatedAt": "2023-12-08T14:30:00.000Z",
+    "comments": [
+      {
+        "id": "comment_001",
+        "ticketId": "ticket_001",
+        "authorId": "sup_001",
+        "authorName": "Klaus Weber",
+        "content": "Ticket erhalten. Gehe um 15:00 vor Ort um Hardware zu prüfen.",
+        "type": "internal_note",
+        "isInternal": true,
+        "createdAt": "2023-12-08T14:30:00.000Z"
+      }
+    ]
+  },
+  "message": "Ticket-Details erfolgreich geladen"
+}
+```
+
+### 5. Kommentar zu Ticket hinzufügen
+
+```http
+POST /api/support/tickets/:ticketId/comments
+```
+
+**Berechtigungen:** Authentifizierter Benutzer
+
+#### Request-Body
+```json
+{
+  "content": "Hardware vor Ort geprüft. Netzteil defekt - keine Stromzufuhr.",
+  "type": "internal_note"
+}
+```
+
+#### Parameter-Validierung
+| Parameter | Typ | Erforderlich | Optionen |
+|-----------|-----|--------------|----------|
+| `content` | string | ✅ | Max. 2000 Zeichen |
+| `type` | string | ❌ | `internal_note`, `status_change`, `assignment` |
+
+#### Beispiel-Request
+```bash
+curl -X POST "http://localhost:5000/api/support/tickets/ticket_001/comments" \
+  -H "Authorization: Bearer $adminToken" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Hardware vor Ort geprüft. Netzteil defekt - bestelle Ersatz.",
+    "type": "internal_note"
+  }'
+```
+
+#### Beispiel-Response
+```json
+{
+  "success": true,
+  "data": {
+    "id": "comment_abc123",
+    "ticketId": "ticket_001",
+    "authorId": "sup_001",
+    "authorName": "Klaus Weber",
+    "content": "Hardware vor Ort geprüft. Netzteil defekt - bestelle Ersatz.",
+    "type": "internal_note",
+    "isInternal": true,
+    "createdAt": "2023-12-08T15:15:00.000Z"
+  },
+  "message": "Kommentar erfolgreich hinzugefügt"
+}
+```
+
+### 6. Alle Kommentare eines Tickets abrufen
+
+```http
+GET /api/support/tickets/:ticketId/comments
+```
+
+**Berechtigungen:** Authentifizierter Benutzer
+
+#### Beispiel-Response
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "comment_001",
+      "ticketId": "ticket_001",
+      "authorId": "sup_001",
+      "authorName": "Klaus Weber",
+      "content": "Ticket erhalten. Gehe vor Ort.",
+      "type": "internal_note",
+      "isInternal": true,
+      "createdAt": "2023-12-08T14:30:00.000Z"
+    }
+  ],
+  "message": "3 Kommentare geladen"
+}
+```
+
 #### URL-Parameter
 | Parameter | Typ | Beschreibung |
 |-----------|-----|--------------|
@@ -262,15 +402,17 @@ curl -X PUT "http://localhost:5000/api/support/tickets/ticket_001" \
 }
 ```
 
-## 📊 Ticket-Kategorien & Prioritäten
+## 📊 IT-Ticket-Kategorien & Prioritäten (v1.1)
 
-### Verfügbare Kategorien
-| Kategorie | Beschreibung | Typische Tickets |
-|-----------|--------------|------------------|
-| `technical` | Technische Probleme | Login-Fehler, App-Crashes, API-Probleme |
-| `account` | Account-Management | Passwort-Reset, Profil-Updates, Zugriffsprobleme |
-| `billing` | Rechnungs-/Zahlungsthemen | Rechnungsanfragen, Zahlungsprobleme, Stornierungen |
-| `general` | Allgemeine Anfragen | Produktfragen, Feature-Requests, Feedback |
+### Interne IT-Kategorien
+| Kategorie | Icon | Beschreibung | Typische Tickets |
+|-----------|------|--------------|------------------|
+| `hardware` | 🖥️ | Hardware-Probleme | Laptop startet nicht, Drucker defekt, Monitor-Ausfall |
+| `software` | 💻 | Software-Support | Office-Installation, App-Updates, Programm-Fehler |
+| `network` | 🌐 | Netzwerk-Probleme | WLAN-Ausfall, VPN-Zugang, Server nicht erreichbar |
+| `access` | 🔐 | Zugriffs-Management | Passwort-Reset, Berechtigungen, Account-Probleme |
+| `phone` | 📞 | Telefon-System | Durchwahl einrichten, Voicemail-Probleme, Telefon defekt |
+| `other` | 📋 | Sonstige IT-Anfragen | Allgemeine IT-Fragen, Equipment-Requests |
 
 ### Prioritätsstufen
 | Priorität | SLA-Zeit | Verwendung |

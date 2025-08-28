@@ -25,18 +25,47 @@ export function generateAuthToken(user: AuthUser): string {
 }
 
 /**
+ * Prüft, ob ein String ein gültiges JWT-Format hat
+ */
+export function isValidJWTFormat(token: string): boolean {
+  if (!token || typeof token !== 'string') {
+    return false;
+  }
+
+  // JWT hat drei Teile getrennt durch Punkte
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return false;
+  }
+
+  // Jeder Teil sollte Base64-kodiert sein (kann Padding haben oder nicht)
+  const base64Regex = /^[A-Za-z0-9_-]+={0,2}$/;
+  return parts.every(part => part.length > 0 && base64Regex.test(part));
+}
+
+/**
  * JWT Token validieren und dekodieren
  */
 export function validateAuthToken(token: string): JWTPayload | null {
   try {
+    // Erst prüfen, ob es überhaupt ein JWT-Format ist
+    if (!isValidJWTFormat(token)) {
+      // Stille Rückgabe - das ist kein JWT, aber kein Fehler
+      return null;
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET, {
       issuer: 'companyai-auth',
       audience: 'companyai-app'
     }) as JWTPayload;
 
+    console.log(`✅ JWT Token erfolgreich validiert für User: ${decoded.userId}`);
     return decoded;
   } catch (error) {
-    console.error('JWT Validation Fehler:', error);
+    // Nur loggen wenn es sich um einen JWT handelt, aber die Validierung fehlschlägt
+    if (isValidJWTFormat(token)) {
+      console.error('JWT Validation Fehler für gültiges JWT-Format:', error.message);
+    }
     return null;
   }
 }

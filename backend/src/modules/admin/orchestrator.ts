@@ -42,6 +42,7 @@ import {
 
 // Import core functionality
 import { AuthenticatedRequest, requirePermission, logAuthEvent } from '../hr/core/auth';
+import { requireAdminAccess, requireAdminAdmin } from '../../middleware/permission.middleware';
 
 /**
  * Admin-Orchestrator Klasse - Koordiniert alle Admin-Module-Funktionen
@@ -747,101 +748,101 @@ export class AdminOrchestrator {
 export function registerAdminRoutes(router: any) {
   // User Management Routes
   router.get('/admin/users',
-    requirePermission('admin', 'admin_users'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleFetchAdminUsers
   );
   
   router.get('/admin/users/:userId',
-    requirePermission('admin', 'admin_users'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleFetchAdminUserById
   );
   
   router.post('/admin/users',
-    requirePermission('admin', 'admin_users'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleCreateAdminUser
   );
   
   router.put('/admin/users/:userId',
-    requirePermission('admin', 'admin_users'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleUpdateAdminUser
   );
   
   router.delete('/admin/users/:userId',
-    requirePermission('admin', 'admin_users'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleDeleteAdminUser
   );
 
   router.post('/admin/users/bulk-action',
-    requirePermission('admin', 'admin_users'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleBulkUserAction
   );
 
   // System Settings Routes
   router.get('/admin/settings',
-    requirePermission('admin', 'system_settings'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleFetchSystemSettings
   );
   
   router.get('/admin/settings/:key',
-    requirePermission('admin', 'system_settings'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleFetchSystemSettingByKey
   );
   
   router.post('/admin/settings',
-    requirePermission('admin', 'system_settings'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleUpdateSystemSetting
   );
   
   router.delete('/admin/settings/:key',
-    requirePermission('admin', 'system_settings'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleDeleteSystemSetting
   );
 
   router.get('/admin/settings-by-category',
-    requirePermission('admin', 'system_settings'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleFetchSettingsByCategory
   );
 
   // Audit & Logging Routes
   router.get('/admin/audit-logs',
-    requirePermission('admin', 'audit_logs'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleFetchAuditLogs
   );
 
   router.get('/admin/system-stats',
-    requirePermission('admin', 'system_stats'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleFetchSystemStats
   );
 
   router.get('/admin/audit-stats',
-    requirePermission('admin', 'audit_stats'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleFetchAuditStats
   );
 
   router.post('/admin/audit-logs/cleanup',
-    requirePermission('admin', 'audit_logs'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleCleanupAuditLogs
   );
 
   // Import/Export Routes
   router.get('/admin/export/settings',
-    requirePermission('admin', 'system_settings'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleExportSettings
   );
 
   router.post('/admin/import/settings',
-    requirePermission('admin', 'system_settings'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleImportSettings
   );
 
   router.get('/admin/export/audit-logs',
-    requirePermission('admin', 'audit_logs'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleExportAuditLogs
   );
 
   // Development/Test Routes
   router.post('/admin/test-data',
-    requirePermission('admin', 'all'),
+    requireAdminAdmin(),
     AdminOrchestrator.handleGenerateTestData
   );
 }

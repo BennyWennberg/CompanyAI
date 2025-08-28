@@ -56,19 +56,35 @@ export async function fetchEmployeeData(
     } = request;
 
     // Nutze Combined DataSources statt Mock-Daten
+    console.log(`🔍 HR fetchEmployeeData: Loading users with filter - department: ${department}, status: ${status}`);
+    
     let filteredUsers = await findCombinedUsers({
       source: 'all',
       department,
       accountEnabled: status === 'active' ? true : status === 'inactive' ? false : undefined
     });
+    
+    console.log(`📊 HR fetchEmployeeData: Found ${filteredUsers.length} users from DataSources`);
+    if (filteredUsers.length > 0) {
+      console.log(`👤 HR fetchEmployeeData: First user sample: ${filteredUsers[0].displayName} (${filteredUsers[0].source})`);
+    } else {
+      console.log(`⚠️  HR fetchEmployeeData: No users found in DataSources - checking sources individually...`);
+      
+      // Debug: Prüfe einzelne Quellen
+      const entraUsers = await findCombinedUsers({ source: 'entra' });
+      const manualUsers = await findCombinedUsers({ source: 'manual' });
+      console.log(`   📋 Entra users: ${entraUsers.length}, Manual users: ${manualUsers.length}`);
+    }
 
     // Filter nach employeeId
     if (employeeId) {
       filteredUsers = filteredUsers.filter((user: CombinedUser) => user.id === employeeId);
+      console.log(`🔍 HR fetchEmployeeData: Filtered by employeeId ${employeeId}: ${filteredUsers.length} users`);
     }
 
     // Konvertiere zu Employee Format
     const employees = filteredUsers.map(convertToEmployee);
+    console.log(`✅ HR fetchEmployeeData: Converted ${employees.length} users to Employee format`);
 
     // Pagination anwenden
     const total = employees.length;
