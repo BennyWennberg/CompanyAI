@@ -7,8 +7,29 @@ export interface Employee {
   email: string;
   department: string;
   position: string;
-  startDate: Date;
+  startDate: Date | string;
   status: 'active' | 'inactive' | 'pending';
+  // CombinedUser compatibility fields
+  displayName?: string;
+  userPrincipalName?: string;
+  mail?: string;
+  jobTitle?: string;
+  accountEnabled?: boolean;
+  source?: 'entra' | 'manual';
+  createdDateTime?: string;
+  givenName?: string;
+  surname?: string;
+  officeLocation?: string;
+  mobilePhone?: string;
+  businessPhones?: string[];
+  companyName?: string;
+  employeeId?: string;
+  costCenter?: string;
+  division?: string;
+  manager?: {
+    id: string;
+    displayName: string;
+  };
 }
 
 // Schema-basierte Zusatzinformationen

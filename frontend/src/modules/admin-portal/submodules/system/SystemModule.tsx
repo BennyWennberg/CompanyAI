@@ -3,6 +3,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import DashboardPage from './pages/DashboardPage';
 import StatsPage from './pages/StatsPage';
 import DatabasePage from './pages/DatabasePage';
+import RAGStatusPage from './pages/RAGStatusPage';
+import SecurityCompliancePage from './pages/SecurityCompliancePage';
+import LoggingPage from './pages/LoggingPage';
 
 const SystemModule: React.FC = () => {
   return (
@@ -12,6 +15,9 @@ const SystemModule: React.FC = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/stats" element={<StatsPage />} />
         <Route path="/database" element={<DatabasePage />} />
+        <Route path="/rag" element={<RAGStatusPage />} />
+        <Route path="/security" element={<SecurityCompliancePage />} />
+        <Route path="/logging" element={<LoggingPage />} />
         <Route path="*" element={<Navigate to="/admin-portal/system/dashboard" replace />} />
       </Routes>
     </div>

@@ -4,6 +4,7 @@
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
+import type { Result as MammothResult } from 'mammoth';
 
 // Externe Ordner-Konfiguration (neue Struktur)
 const RAG_EXTERNAL_DOCS_PATH = process.env.RAG_EXTERNAL_DOCS_PATH;
@@ -111,6 +112,30 @@ export function extractTextFromFile(filename: string, content: Buffer): string {
 }
 
 /**
+ * Asynchrone Extraktion für Binärformate (PDF/DOCX)
+ */
+export async function extractTextFromBinaryAsync(filename: string, content: Buffer): Promise<string | null> {
+  const extension = path.extname(filename).toLowerCase();
+  try {
+    if (extension === '.docx') {
+      // Lazy import to avoid optional dep cost when unused
+      const mammoth = await import('mammoth');
+      const result: MammothResult = await mammoth.extractRawText({ buffer: content });
+      return (result.value || '').trim();
+    }
+    if (extension === '.pdf') {
+      const pdfParse = (await import('pdf-parse')).default as (data: Buffer) => Promise<{ text: string }>;
+      const parsed = await pdfParse(content);
+      return (parsed.text || '').trim();
+    }
+    return null;
+  } catch (err) {
+    console.warn(`Binary extraction failed for ${filename}:`, err);
+    return null;
+  }
+}
+
+/**
  * Nachricht für Binärdateien erstellen
  */
 function createBinaryFileMessage(filename: string, size: number): string {
@@ -184,8 +209,14 @@ export async function addOriginalFile(
   const originalPath = path.join(ORIGINALS_DIR, originalFilename);
   fs.writeFileSync(originalPath, originalContent);
   
-  // Text extrahieren
-  const extractedText = extractTextFromFile(originalName, originalContent);
+  // Text extrahieren (bevorzugt asynchron für Binärformate)
+  let extractedText = extractTextFromFile(originalName, originalContent);
+  if (/\.(pdf|docx)$/i.test(originalName)) {
+    const asyncText = await extractTextFromBinaryAsync(originalName, originalContent);
+    if (asyncText && asyncText.length > 0) {
+      extractedText = asyncText.substring(0, 5000);
+    }
+  }
   
   // Markdown-Version für RAG erstellen (in markdowns Ordner)
   const markdownFilename = `${normalizedName}-${ts}.md`;
@@ -227,6 +258,54 @@ ${extractedText}
     isExternal: !!RAG_EXTERNAL_DOCS_PATH,
     extractedText: extractedText.substring(0, 500) + '...' // Preview
   };
+}
+
+/**
+ * Wartung: Alle Originale erneut nach Markdown konvertieren
+ */
+export async function rebuildMarkdownsFromOriginals(): Promise<{ processed: number; errors: number }> {
+  ensureUploadDirs();
+  let processed = 0; let errors = 0;
+  const files = fs.readdirSync(ORIGINALS_DIR).filter(f => !f.startsWith('.'));
+  for (const filename of files) {
+    try {
+      const originalPath = path.join(ORIGINALS_DIR, filename);
+      const buf = fs.readFileSync(originalPath);
+      const base = path.parse(filename).name; // normalizedName-ISO
+      const markdownFilename = `${base}.md`;
+      const markdownPath = path.join(MARKDOWNS_DIR, markdownFilename);
+
+      // Extrahieren
+      let extractedText = extractTextFromFile(filename, buf);
+      const asyncText = await extractTextFromBinaryAsync(filename, buf);
+      if (asyncText && asyncText.length > 0) extractedText = asyncText.substring(0, 5000);
+
+      const downloadUrl = `/api/ai/rag/download/original/${filename}`;
+      const markdownContent = `# ${path.parse(filename).name}
+
+**Originaldatei:** ${filename}  
+**Dateigröße:** ${Math.round(buf.length / 1024)} KB  
+**Format:** ${path.extname(filename).toUpperCase()}  
+**Download:** [📁 ${filename} herunterladen](${downloadUrl})
+
+---
+
+## Inhalt
+
+${extractedText}
+
+---
+
+*Automatisch extrahiert und für RAG-System konvertiert.*`;
+
+      fs.writeFileSync(markdownPath, markdownContent, 'utf-8');
+      processed++;
+    } catch (e) {
+      console.warn('Rebuild markdown failed for', filename, e);
+      errors++;
+    }
+  }
+  return { processed, errors };
 }
 
 /**

@@ -54,12 +54,36 @@ export async function authenticateWithPermissions(
     
     console.log(`🔑 Auth: User ${coreUser.email} authenticated`);
     
-    // 2. Generiere eindeutige User-ID für Permission-System
+    // 2. Robuste Admin-Erkennung
+    const isAdmin = coreUser.email === 'admin@company.com' || 
+                   coreUser.email === 'administrator@company.com' || 
+                   coreUser.role === 'admin' || 
+                   coreUser.role === 'administrator' ||
+                   coreUser.id === '1'; // Mock-Admin-ID
+    
+    console.log(`🔍 Admin-Check: Email=${coreUser.email}, Role=${coreUser.role}, IsAdmin=${isAdmin}`);
+    
+    // 3. Generiere User-ID für Permission-System
     const permissionUserId = generatePermissionUserId(coreUser);
     
-    // 3. Lade Module-Permissions aus JSON
-    const modulePermissions = await PermissionService.getUserPermissions(permissionUserId);
-    const visibleModules = PermissionService.getVisibleModules(modulePermissions);
+    let modulePermissions: ModulePermissions;
+    let visibleModules: ModuleName[];
+    
+    if (isAdmin) {
+      // Admin bekommt Vollzugriff auf alle Module
+      modulePermissions = {
+        ai: 'admin',
+        support: 'admin', 
+        hr: 'admin',
+        admin_portal: 'admin'
+      };
+      visibleModules = ['ai', 'support', 'hr', 'admin_portal'];
+      console.log(`👑 Admin-Permissions gewährt für: ${coreUser.email}`);
+    } else {
+      // Für normale User: Lade Module-Permissions aus JSON
+      modulePermissions = await PermissionService.getUserPermissions(permissionUserId);
+      visibleModules = PermissionService.getVisibleModules(modulePermissions);
+    }
     
     console.log(`🔑 Permissions: User ${coreUser.email} (${permissionUserId}) hat Zugriff auf: [${visibleModules.join(', ')}]`);
     

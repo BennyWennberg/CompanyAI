@@ -7,6 +7,10 @@ import type { WebRagRequest, WebRagResult, AIResponse } from '../types';
 
 // Web-RAG Configuration
 const WEB_SEARCH_ENABLED = process.env.WEB_SEARCH_ENABLED === 'true' || false;
+const WEB_RAG_ALLOWLIST = (process.env.WEB_RAG_ALLOWLIST || '')
+  .split(',')
+  .map(s => s.trim().toLowerCase())
+  .filter(Boolean);
 const SERPER_API_KEY = process.env.SERPER_API_KEY; // Google Search API
 const BING_API_KEY = process.env.BING_API_KEY;     // Bing Search API
 
@@ -50,9 +54,17 @@ export async function searchWeb(
         throw new Error(`Unbekannter Search Provider: ${provider}`);
     }
 
-    // Inhalte von den URLs scrapen
+    // Inhalte von den URLs scrapen (mit Allowlist-Filter, falls gesetzt)
     const webResults: WebRagResult[] = [];
     for (const result of searchResults) {
+      try {
+        const urlObj = new URL(result.url);
+        const hostname = urlObj.hostname.toLowerCase();
+        if (WEB_RAG_ALLOWLIST.length > 0 && !WEB_RAG_ALLOWLIST.some(domain => hostname.endsWith(domain))) {
+          // Domain nicht erlaubt → überspringen
+          continue;
+        }
+      } catch {}
       try {
         const content = await scrapeWebContent(result.url);
         webResults.push({
@@ -209,6 +221,12 @@ export async function scrapeWebContent(url: string): Promise<{ content: string; 
     const urlObj = new URL(url);
     if (!['http:', 'https:'].includes(urlObj.protocol)) {
       throw new Error('Nur HTTP/HTTPS URLs sind erlaubt');
+    }
+
+    // Allowlist-Check
+    const hostname = urlObj.hostname.toLowerCase();
+    if (WEB_RAG_ALLOWLIST.length > 0 && !WEB_RAG_ALLOWLIST.some(domain => hostname.endsWith(domain))) {
+      throw new Error(`Domain nicht erlaubt: ${hostname}`);
     }
 
     const response = await axios.get(url, {

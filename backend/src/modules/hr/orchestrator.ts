@@ -854,6 +854,57 @@ export class HROrchestrator {
       });
     }
   }
+
+  /**
+   * Synchronisiert DataSources (Entra ID, Manual, etc.)
+   */
+  static async handleSyncDataSources(req: AuthenticatedRequest, res: Response) {
+    try {
+      const userId = req.user?.id || 'unknown';
+      const userEmail = req.user?.email || 'unknown';
+
+      console.log(`🔄 HR Sync: User ${userEmail} (${userId}) triggering DataSources sync`);
+      logAuthEvent(userId, 'sync', 'datasources');
+
+      // Import sync functions
+      const { syncAll } = require('../../datasources/entraac/sync');
+      const { getCombinedStats } = require('../../datasources/entraac/combined');
+
+      // Get stats before sync
+      const statsBefore = await getCombinedStats();
+      console.log(`📊 HR Sync: Stats before sync:`, statsBefore);
+
+      // Trigger sync
+      const syncStartTime = Date.now();
+      await syncAll();
+      const syncDuration = Date.now() - syncStartTime;
+
+      // Get stats after sync
+      const statsAfter = await getCombinedStats();
+      console.log(`📊 HR Sync: Stats after sync:`, statsAfter);
+
+      res.json({
+        success: true,
+        data: {
+          entra: statsAfter.users?.bySource?.entra || 0,
+          manual: statsAfter.users?.bySource?.manual || 0,
+          ldap: 0, // LDAP not implemented yet
+          upload: 0, // Upload not implemented yet
+          total: statsAfter.users?.total || 0,
+          syncDuration: `${syncDuration}ms`
+        },
+        message: `DataSources erfolgreich synchronisiert in ${syncDuration}ms`
+      });
+
+    } catch (error) {
+      console.error('❌ HR Sync Fehler:', error);
+      res.status(500).json({
+        success: false,
+        error: 'SyncError',
+        message: 'DataSources Synchronisation fehlgeschlagen'
+      });
+    }
+  }
 }
 
 /**
@@ -931,6 +982,12 @@ export function registerHRRoutes(router: any) {
   router.post('/hr/test-data',
     requirePermission('admin', 'all'),
     HROrchestrator.handleGenerateTestData
+  );
+
+  // DataSources Sync Route
+  router.post('/hr/sync-datasources',
+    requireHRAdmin(),
+    HROrchestrator.handleSyncDataSources
   );
 
   // ===== DOCUMENT MANAGEMENT ROUTES =====

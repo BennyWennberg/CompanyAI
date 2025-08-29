@@ -27,6 +27,20 @@ const mockUsers: User[] = [
     email: 'admin@company.com',
     role: 'admin',
     permissions: [{ action: 'admin', resource: 'all' }]
+  },
+  {
+    id: 'test-user-1',
+    email: 'test.user@company.com',
+    role: 'employee',
+    department: 'IT',
+    permissions: []
+  },
+  {
+    id: 'normal-user-1',
+    email: 'normal.user@company.com',
+    role: 'employee',
+    department: 'HR',
+    permissions: []
   }
 ];
 
@@ -77,16 +91,33 @@ export async function authenticateUser(token: string): Promise<User | null> {
         if (mockUser) {
           console.log(`🔓 Base64 Token validiert für: ${mockUser.email}`);
           
-          // Auch für Mock-User die Permission-Bridge nutzen
-          const enhancedPermissions = await getEnhancedPermissionsForUser(
-            mockUser.email, 
-            mockUser.department || 'standard', 
-            mockUser.role
-          );
+          // Robuste Admin-Erkennung für Mock-User
+          let permissions = mockUser.permissions;
+          
+          // Prüfe ob User Admin ist
+          if (mockUser.email === 'admin@company.com' || mockUser.role === 'admin') {
+            console.log(`👑 Admin erkannt: ${mockUser.email} - Vollzugriff gewährt`);
+            permissions = [{ action: 'admin', resource: 'all' }];
+          } else {
+            // Für normale User: Versuche Permission-Bridge, aber mit Fallback
+            try {
+              const enhancedPermissions = await getEnhancedPermissionsForUser(
+                mockUser.email, 
+                mockUser.department || 'standard', 
+                mockUser.role
+              );
+              permissions = enhancedPermissions;
+            } catch (error) {
+              console.warn(`⚠️ Permission-Bridge Fehler für ${mockUser.email}:`, error.message);
+              console.log(`🔄 Fallback zu Role-based Permissions für ${mockUser.email}`);
+              // Fallback: Basis-Permissions basierend auf Role
+              permissions = mockUser.permissions;
+            }
+          }
           
           const user: User = {
             ...mockUser,
-            permissions: enhancedPermissions
+            permissions
           };
           
           return user;

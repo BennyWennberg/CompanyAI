@@ -20,6 +20,8 @@ import {
 import { performWebRag, formatWebRagContext } from './functions/web-rag';
 import { speechToText, textToSpeech, getAudioFile, cleanupVoiceFiles, isValidAudioFormat, getAudioFormat } from './functions/voice';
 import type { AIChatRequest, CreateSessionRequest, UpdateSessionRequest, SearchSessionsRequest, VoiceToTextRequest, TextToVoiceRequest } from './types';
+import { isAdministrator } from '../../config/admin.config';
+import { LoggingService } from '../../services/logging.service';
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -88,6 +90,12 @@ export class AIOrchestrator {
 
       // 2. Web-RAG (neue Funktion)
       if (webRag && (webSearchQuery || websiteUrl)) {
+        // Admin-Only Guard (optional via ENV)
+        const adminOnly = process.env.WEB_RAG_ADMIN_ONLY === 'true';
+        const userEmail = req.user?.email || '';
+        if (adminOnly && !isAdministrator(userEmail)) {
+          return res.status(403).json({ success: false, error: 'WebRagAdminOnly', message: 'Web-RAG ist nur für Administratoren erlaubt' });
+        }
         try {
           const webRagResponse = await performWebRag({
             query: webSearchQuery || [...messages].reverse().find(m => m.role === 'user')?.content || '',
@@ -201,6 +209,19 @@ export class AIOrchestrator {
       if (sessionInfo) {
         response.session = sessionInfo;
       }
+
+      // Logging
+      try {
+        LoggingService.logEvent('ai', 'chat', {
+          provider,
+          model,
+          usedRag: !!rag,
+          usedWebRag: !!webRag,
+          ragSources: ragSources.map(s => ({ path: s.path, isWeb: s.isWeb, isOriginal: s.isOriginal })),
+          userId: req.user?.id || 'unknown',
+          userEmail: req.user?.email || 'unknown'
+        });
+      } catch {}
 
       return res.json(response);
     } catch (error: any) {
@@ -692,6 +713,37 @@ export class AIOrchestrator {
       });
     }
   }
+
+  // ===== NEU: Logging Admin Endpoints =====
+  static async handleGetAiLogs(req: AuthenticatedRequest, res: Response) {
+    try {
+      const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 200;
+      const data = LoggingService.getLogs('ai', limit);
+      return res.json({ success: true, data, message: `${data.length} Log-Einträge geladen` });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: 'LogsReadError', message: error?.message || 'Logs konnten nicht geladen werden' });
+    }
+  }
+
+  // ===== NEU: AI Config (sichere Werte) =====
+  static async handleGetAIConfig(req: AuthenticatedRequest, res: Response) {
+    try {
+      const config = {
+        HYBRID_RAG_ENABLED: process.env.HYBRID_RAG_ENABLED === 'true',
+        WEB_SEARCH_ENABLED: process.env.WEB_SEARCH_ENABLED === 'true',
+        WEB_RAG_ADMIN_ONLY: process.env.WEB_RAG_ADMIN_ONLY === 'true',
+        WEB_RAG_ALLOWLIST: (process.env.WEB_RAG_ALLOWLIST || '')
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean),
+        RAG_EXTERNAL_DOCS_PATH_SET: !!process.env.RAG_EXTERNAL_DOCS_PATH,
+        RAG_INDEX_PATH_SET: !!process.env.RAG_INDEX_PATH,
+      };
+      return res.json({ success: true, data: config });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: 'AIConfigError', message: error?.message || 'AI Config konnte nicht geladen werden' });
+    }
+  }
 }
 
 export function registerAIRoutes(router: any) {
@@ -758,6 +810,12 @@ export function registerAIRoutes(router: any) {
   // NEU: Hybrid RAG Analytics Endpoints
   router.get('/ai/rag/hybrid/stats', requireAIAccess(), AIOrchestrator.handleHybridRagStats);
   router.post('/ai/rag/hybrid/compare', requireAIAccess(), AIOrchestrator.handleSearchComparison);
+
+  // NEU: Logging (Admin)
+  router.get('/ai/logs', requireAIAdmin(), AIOrchestrator.handleGetAiLogs);
+
+  // NEU: AI Config (Admin)
+  router.get('/ai/config', requireAIAdmin(), AIOrchestrator.handleGetAIConfig);
 }
 
 // --- Provider Helpers ---

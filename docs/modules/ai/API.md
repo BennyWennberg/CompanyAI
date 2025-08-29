@@ -649,6 +649,9 @@ Web-RAG erweitert das Standard-RAG um aktuelle Online-Informationen durch:
 WEB_SEARCH_ENABLED=true
 SERPER_API_KEY=your_serper_api_key_here    # Google Search
 BING_API_KEY=your_bing_api_key_here        # Bing Search
+# Guardrails
+WEB_RAG_ADMIN_ONLY=true
+WEB_RAG_ALLOWLIST=example.com,example.org
 ```
 
 ### Verwendung im Chat
@@ -896,6 +899,31 @@ Hybrid RAG Search kombiniert mehrere Suchalgorithmen für bessere Ergebnisse:
 ```bash
 # In backend/.env
 HYBRID_RAG_ENABLED=true  # Aktiviert Hybrid-Suche
+# Optionales einfaches Reranking
+HYBRID_RAG_RERANK=true
+```
+
+### 23. AI Config (Admin)
+
+**GET** `/ai/config`
+
+Lädt sichere AI-Config-Flags (ohne Secrets) für Admin UI.
+
+**Berechtigung:** `admin`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "HYBRID_RAG_ENABLED": true,
+    "WEB_SEARCH_ENABLED": true,
+    "WEB_RAG_ADMIN_ONLY": true,
+    "WEB_RAG_ALLOWLIST": ["example.com"],
+    "RAG_EXTERNAL_DOCS_PATH_SET": true,
+    "RAG_INDEX_PATH_SET": true
+  }
+}
 ```
 
 ### 21. Hybrid RAG Statistiken

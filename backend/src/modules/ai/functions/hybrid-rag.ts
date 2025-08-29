@@ -29,7 +29,7 @@ interface HybridSearchConfig {
 const DEFAULT_HYBRID_CONFIG: HybridSearchConfig = {
   vectorWeight: 0.7,
   bm25Weight: 0.3,
-  useReranking: false,  // Vorerst deaktiviert (benötigt zusätzliche Dependencies)
+  useReranking: process.env.HYBRID_RAG_RERANK === 'true',
   expandQuery: false,   // Vorerst deaktiviert
   minHybridScore: 0.1
 };
@@ -172,6 +172,16 @@ export async function hybridRagSearch(
     const searchConfig: HybridSearchConfig = { ...DEFAULT_HYBRID_CONFIG, ...config };
     console.log(`🔍 Hybrid RAG Search: "${query}" (${index.chunks.length} Chunks, Vector: ${searchConfig.vectorWeight}, BM25: ${searchConfig.bm25Weight})`);
 
+    // Optional: Prefix-Filter für Quellen (Metadaten-Filter einfacher Art)
+    const prefixFilter = process.env.RAG_SOURCE_PREFIX_FILTER || '';
+    const chunksToSearch = prefixFilter
+      ? index.chunks.filter(c => (c.sourcePath || '').startsWith(prefixFilter))
+      : index.chunks;
+    if (chunksToSearch.length === 0) {
+      console.warn('Prefix-Filter ergab 0 Dokumente');
+      return [];
+    }
+
     // Query-Expansion
     const processedQuery = searchConfig.expandQuery ? expandQuery(query) : query;
     const queryTokens = tokenize(processedQuery);
@@ -185,12 +195,12 @@ export async function hybridRagSearch(
     const [queryEmbedding] = await embedTexts([processedQuery]);
     
     // 2. BM25-Vorbereitung
-    const documentFrequencies = calculateDocumentFrequencies(index.chunks);
-    const avgDocLength = index.chunks.reduce((sum, chunk) => sum + tokenize(chunk.content).length, 0) / index.chunks.length;
-    const totalDocuments = index.chunks.length;
+    const documentFrequencies = calculateDocumentFrequencies(chunksToSearch);
+    const avgDocLength = chunksToSearch.reduce((sum, chunk) => sum + tokenize(chunk.content).length, 0) / chunksToSearch.length;
+    const totalDocuments = chunksToSearch.length;
 
     // 3. Scores für alle Chunks berechnen
-    const scoredChunks: ScoredChunk[] = index.chunks.map(chunk => {
+    const scoredChunks: ScoredChunk[] = chunksToSearch.map(chunk => {
       // Vector-Score
       const vectorScore = cosineSimilarity(queryEmbedding, chunk.embedding);
       
@@ -226,11 +236,19 @@ export async function hybridRagSearch(
       console.log(`   ${i + 1}. ${chunk.sourcePath} - Hybrid: ${chunk.hybridScore.toFixed(3)} (Vector: ${chunk.vectorScore.toFixed(3)}, BM25: ${chunk.bm25Score.toFixed(3)})`);
     });
 
-    // 7. Re-Ranking (falls aktiviert und implementiert)
+    // 7. Re-Ranking (falls aktiviert) - einfacher lexical overlap Booster
     if (searchConfig.useReranking && topChunks.length > 1) {
-      console.log('⚠️ CrossEncoder Re-Ranking noch nicht implementiert');
-      // Hier würde CrossEncoder Re-Ranking kommen
-      // Benötigt zusätzliche Dependencies wie @xenova/transformers
+      const qTokens = new Set(tokenize(processedQuery));
+      const reranked = topChunks.map(chunk => {
+        const cTokens = new Set(tokenize(chunk.content));
+        let overlap = 0;
+        qTokens.forEach(t => { if (cTokens.has(t)) overlap++; });
+        const overlapScore = Math.min(1, overlap / Math.max(1, qTokens.size));
+        const rerankedScore = (chunk as ScoredChunk).hybridScore + 0.05 * overlapScore;
+        return { chunk, rerankedScore };
+      }).sort((a, b) => b.rerankedScore - a.rerankedScore)
+        .map(x => x.chunk);
+      return reranked as RagChunk[];
     }
 
     return topChunks.map(({ vectorScore, bm25Score, hybridScore, rerankedScore, ...chunk }) => chunk);

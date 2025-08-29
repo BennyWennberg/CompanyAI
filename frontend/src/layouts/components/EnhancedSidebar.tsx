@@ -45,9 +45,7 @@ const EnhancedSidebar: React.FC = () => {
       description: 'Chat-Assistenten und Dokumentenanalyse',
       submenu: [
         { title: 'Chat', path: '/ai/chat', icon: '💬' },
-        { title: 'Dokumentenanalyse', path: '/ai/documents', icon: '📄' },
-        { title: 'RAG-Suche', path: '/ai/search', icon: '🔍' },
-        { title: 'Einstellungen', path: '/ai/settings', icon: '⚙️', requiredLevel: 'admin' }
+        { title: 'Dokumente (Upload)', path: '/ai/docs', icon: '📄' }
       ]
     },
     {
@@ -85,11 +83,18 @@ const EnhancedSidebar: React.FC = () => {
       moduleKey: 'admin_portal',
       description: 'System-Administration und User-Management',
       submenu: [
-        { title: 'Dashboard', path: '/admin-portal/dashboard', icon: '📊' },
+        { title: 'Dashboard', path: '/admin-portal/system/dashboard', icon: '📊' },
         { title: 'Benutzer-Verwaltung', path: '/admin-portal/users', icon: '👥' },
+        { title: 'Users Overview', path: '/admin-portal/users/overview', icon: '👤' },
+        { title: 'Sync Management', path: '/admin-portal/users/sync', icon: '🔄', requiredLevel: 'admin' },
+        { title: 'Upload', path: '/admin-portal/users/upload', icon: '📤', requiredLevel: 'admin' },
+        { title: 'Manual Users', path: '/admin-portal/users/manual', icon: '✍️', requiredLevel: 'admin' },
+        { title: 'Conflicts', path: '/admin-portal/users/conflicts', icon: '⚠️', requiredLevel: 'admin' },
         { title: 'Berechtigungen', path: '/admin-portal/permissions', icon: '🔐' },
-        { title: 'System-Settings', path: '/admin-portal/settings', icon: '⚙️' },
-        { title: 'Audit-Logs', path: '/admin-portal/audit', icon: '📋', requiredLevel: 'admin' }
+        { title: 'System-Statistiken', path: '/admin-portal/system/stats', icon: '⚙️' },
+        { title: 'RAG Status', path: '/admin-portal/system/rag', icon: '🔍', requiredLevel: 'admin' },
+        { title: 'Security & Compliance', path: '/admin-portal/system/security', icon: '🛡️', requiredLevel: 'admin' },
+        { title: 'Logging', path: '/admin-portal/system/logging', icon: '📋', requiredLevel: 'admin' }
       ]
     }
   ];

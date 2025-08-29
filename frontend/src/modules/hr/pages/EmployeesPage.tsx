@@ -50,6 +50,17 @@ interface APIResponse<T> {
   message?: string;
 }
 
+interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
 const EmployeesPage: React.FC = () => {
   // 🔐 PERMISSION HOOKS
   const { hasModuleAccess, hasAdminAccess } = useEnhancedPermissions();
@@ -90,6 +101,42 @@ const EmployeesPage: React.FC = () => {
 
   useEffect(() => {
     loadEmployees();
+    // Auto-sync DataSources on component mount if no employees found
+    const autoSync = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          // Check if we have employees, if not, auto-sync
+          const response = await fetch('http://localhost:5000/api/hr/employees?limit=1', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          const result = await response.json();
+          
+          if (result.success && result.data) {
+            let employeeCount = 0;
+            if (Array.isArray(result.data)) {
+              employeeCount = result.data.length;
+            } else if (result.data && typeof result.data === 'object' && 'pagination' in result.data) {
+              employeeCount = result.data.pagination.total;
+            }
+            
+            // If no employees found, auto-sync DataSources
+            if (employeeCount === 0) {
+              console.log('🔄 No employees found, auto-syncing DataSources...');
+              await syncDataSources();
+            }
+          }
+        }
+      } catch (error) {
+        console.log('Auto-sync check failed:', error);
+      }
+    };
+    
+    // Run auto-sync after initial load
+    setTimeout(autoSync, 1000);
   }, []);
 
   // Load documents and additional info when employee is selected
@@ -112,19 +159,30 @@ const EmployeesPage: React.FC = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/hr/employees', {
+      const response = await fetch('http://localhost:5000/api/hr/employees?limit=1000', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
-      const result: APIResponse<CombinedUser[]> = await response.json();
+      const result: APIResponse<PaginatedResponse<CombinedUser> | CombinedUser[]> = await response.json();
 
-      if (result.success && Array.isArray(result.data)) {
-        setEmployees(result.data);
+      if (result.success && result.data) {
+        // Handle both paginated response and direct array response
+        if (Array.isArray(result.data)) {
+          // Direct array response (legacy)
+          setEmployees(result.data);
+        } else if (result.data && typeof result.data === 'object' && 'data' in result.data) {
+          // Paginated response (current API format)
+          const paginatedData = result.data as PaginatedResponse<CombinedUser>;
+          setEmployees(paginatedData.data);
+          console.log(`📊 HR: Loaded ${paginatedData.data.length} of ${paginatedData.pagination.total} employees`);
+        } else {
+          setError('Unerwartetes Datenformat vom Server');
+        }
       } else {
-        setError(result.message || 'Fehler beim Laden der Mitarbeiter');
+        setError(result.message || result.error || 'Fehler beim Laden der Mitarbeiter');
       }
     } catch (err) {
       setError('Verbindungsfehler zum Backend');
@@ -193,6 +251,56 @@ const EmployeesPage: React.FC = () => {
     } catch (error) {
       console.error('Fehler bei der Ordner-Synchronisation:', error);
       setSyncStatus('❌ Verbindungsfehler bei der Synchronisation');
+      setTimeout(() => {
+        setSyncStatus(null);
+      }, 5000);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  // DataSources Synchronization
+  const syncDataSources = async () => {
+    try {
+      setSyncLoading(true);
+      setSyncStatus('Synchronisiere Benutzer-Datenquellen...');
+
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setSyncStatus('❌ Keine Authentifizierung gefunden');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/hr/sync-datasources', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        const { entra, manual, ldap, upload, total } = result.data;
+        setSyncStatus(`✅ DataSources synchronisiert: ${total} User total (Entra: ${entra}, Manual: ${manual}, LDAP: ${ldap}, Upload: ${upload})`);
+        
+        // Reload employees after sync
+        await loadEmployees();
+        
+        // Clear status after 5 seconds
+        setTimeout(() => {
+          setSyncStatus(null);
+        }, 5000);
+      } else {
+        setSyncStatus(`❌ ${result.message || 'DataSources-Synchronisation fehlgeschlagen'}`);
+        setTimeout(() => {
+          setSyncStatus(null);
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('Fehler bei der DataSources-Synchronisation:', error);
+      setSyncStatus('❌ Verbindungsfehler bei der DataSources-Synchronisation');
       setTimeout(() => {
         setSyncStatus(null);
       }, 5000);
@@ -332,6 +440,19 @@ const EmployeesPage: React.FC = () => {
           <p>Verwalte alle Mitarbeiter aus verschiedenen Quellen</p>
         </div>
         <div className="page-actions">
+          {/* 🔐 PERMISSION-GUARD: DataSources-Synchronisation für alle HR-User */}
+          {hasMinimumAccess('access') && (
+            <button 
+              className="btn btn-primary"
+              onClick={syncDataSources}
+              disabled={syncLoading}
+              title="Synchronisiert alle Benutzer-Datenquellen (Entra ID, Manual, LDAP, Upload) und lädt die Mitarbeiterliste neu"
+              style={{ marginRight: '8px' }}
+            >
+              {syncLoading ? '🔄' : '🔄'} {syncLoading ? 'Synchronisiere...' : 'Daten synchronisieren'}
+            </button>
+          )}
+
           {/* 🔐 PERMISSION-GUARD: Ordnerstruktur-Synchronisation nur für Administratoren */}
           {hasMinimumAccess('write') && (
             <button 

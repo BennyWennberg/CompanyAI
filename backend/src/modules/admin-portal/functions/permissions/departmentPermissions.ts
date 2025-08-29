@@ -344,7 +344,7 @@ export function isUserAdmin(userEmail: string, userRole?: string): boolean {
   console.log(`🔍 Admin-Check für: Email="${userEmail}", Role="${userRole}"`);
   
   // Import Admin-Emails aus zentraler Konfiguration  
-  const { getAdminEmails } = require('../../../config/admin.config');
+  const { getAdminEmails } = require('../../../../config/admin.config');
   const adminEmails = getAdminEmails();
   
   // Debug: Zeige alle Admin-Emails

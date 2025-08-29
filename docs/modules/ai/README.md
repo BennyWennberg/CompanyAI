@@ -68,6 +68,7 @@ Unterstützte Modelle: `llama3`, `mistral`, `codellama`
 - `requirePermission('read','all')` für Chat/HR Assist/Docs
 - `requirePermission('admin','all')` für Re-Index und Manual Doc Upload
 - Externe Ordner-Berechtigungen erforderlich für Backend
+- Web-RAG Guardrails: `WEB_RAG_ADMIN_ONLY=true` (nur Admins), `WEB_RAG_ALLOWLIST=example.com,example.org`
 
 ## Frontend-Komponenten
 - `AIModule.tsx` - Haupt-Routing für AI-Features
@@ -80,6 +81,11 @@ Unterstützte Modelle: `llama3`, `mistral`, `codellama`
 - Dashboard-Kachel: „AI & Chat" mit Provider-Info
 
 ## Performance & Limitierungen
+- Hybrid RAG Admin-APIs:
+  - GET `/api/ai/rag/hybrid/stats`
+  - POST `/api/ai/rag/hybrid/compare`
+- Logging API (Admin): GET `/api/ai/logs?limit=200`
+- AI Config (Admin): GET `/api/ai/config`
 - **Embedding-Erstellung**: Abhängig von Provider-Geschwindigkeit
 - **Externe I/O**: Ordner-Zugriff kann Latenz hinzufügen
 - **Index-Größe**: Große Dokumentenmengen beeinflussen Speicherbedarf

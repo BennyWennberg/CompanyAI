@@ -24,9 +24,9 @@ import {
  * Konvertiert CombinedUser zu Employee Format
  */
 function convertToEmployee(user: CombinedUser): Employee {
-  const nameParts = user.displayName.split(' ');
-  const firstName = nameParts[0] || '';
-  const lastName = nameParts.slice(1).join(' ') || '';
+  const nameParts = user.displayName?.split(' ') || ['', ''];
+  const firstName = nameParts[0] || user.givenName || '';
+  const lastName = nameParts.slice(1).join(' ') || user.surname || '';
   
   return {
     id: user.id,
@@ -35,7 +35,7 @@ function convertToEmployee(user: CombinedUser): Employee {
     email: user.mail || user.userPrincipalName || '',
     department: user.department || '',
     position: user.jobTitle || '',
-    startDate: new Date(), // Placeholder - könnte aus createdAt abgeleitet werden
+    startDate: user.createdDateTime ? new Date(user.createdDateTime) : new Date(),
     status: user.accountEnabled === true ? 'active' : user.accountEnabled === false ? 'inactive' : 'pending'
   };
 }
@@ -56,7 +56,7 @@ export async function fetchEmployeeData(
     } = request;
 
     // Nutze Combined DataSources statt Mock-Daten
-    console.log(`🔍 HR fetchEmployeeData: Loading users with filter - department: ${department}, status: ${status}`);
+    console.log(`🔍 HR fetchEmployeeData: Loading users with filter - department: ${department}, status: ${status}, limit: ${limit}, offset: ${offset}`);
     
     let filteredUsers = await findCombinedUsers({
       source: 'all',
@@ -67,13 +67,31 @@ export async function fetchEmployeeData(
     console.log(`📊 HR fetchEmployeeData: Found ${filteredUsers.length} users from DataSources`);
     if (filteredUsers.length > 0) {
       console.log(`👤 HR fetchEmployeeData: First user sample: ${filteredUsers[0].displayName} (${filteredUsers[0].source})`);
+      
+      // Debug: Zeige Quellen-Verteilung
+      const sourceStats = filteredUsers.reduce((acc: Record<string, number>, user) => {
+        acc[user.source] = (acc[user.source] || 0) + 1;
+        return acc;
+      }, {});
+      console.log(`📈 HR fetchEmployeeData: Source distribution:`, sourceStats);
+      
+      // Debug: Zeige Department-Verteilung (nur die ersten 5)
+      const deptStats = filteredUsers.reduce((acc: Record<string, number>, user) => {
+        const dept = user.department || 'Unbekannt';
+        acc[dept] = (acc[dept] || 0) + 1;
+        return acc;
+      }, {});
+      const topDepts = Object.entries(deptStats).slice(0, 5).map(([dept, count]) => `${dept}(${count})`);
+      console.log(`🏢 HR fetchEmployeeData: Top departments: ${topDepts.join(', ')}`);
     } else {
       console.log(`⚠️  HR fetchEmployeeData: No users found in DataSources - checking sources individually...`);
       
       // Debug: Prüfe einzelne Quellen
       const entraUsers = await findCombinedUsers({ source: 'entra' });
       const manualUsers = await findCombinedUsers({ source: 'manual' });
-      console.log(`   📋 Entra users: ${entraUsers.length}, Manual users: ${manualUsers.length}`);
+      const ldapUsers = await findCombinedUsers({ source: 'ldap' });
+      const uploadUsers = await findCombinedUsers({ source: 'upload' });
+      console.log(`   📋 Source breakdown: Entra(${entraUsers.length}), Manual(${manualUsers.length}), LDAP(${ldapUsers.length}), Upload(${uploadUsers.length})`);
     }
 
     // Filter nach employeeId
@@ -82,9 +100,36 @@ export async function fetchEmployeeData(
       console.log(`🔍 HR fetchEmployeeData: Filtered by employeeId ${employeeId}: ${filteredUsers.length} users`);
     }
 
-    // Konvertiere zu Employee Format
-    const employees = filteredUsers.map(convertToEmployee);
-    console.log(`✅ HR fetchEmployeeData: Converted ${employees.length} users to Employee format`);
+    // Konvertiere zu Employee Format aber behalte CombinedUser Felder
+    const employees = filteredUsers.map(user => ({
+      id: user.id,
+      firstName: user.givenName || user.displayName.split(' ')[0] || '',
+      lastName: user.surname || user.displayName.split(' ').slice(1).join(' ') || '',
+      email: user.mail || user.userPrincipalName || '',
+      department: user.department || '',
+      position: user.jobTitle || '',
+      startDate: user.createdDateTime || new Date().toISOString(),
+      status: user.accountEnabled === true ? 'active' : user.accountEnabled === false ? 'inactive' : 'pending' as const,
+      // Behalte CombinedUser Felder für Frontend-Kompatibilität
+      displayName: user.displayName,
+      userPrincipalName: user.userPrincipalName,
+      mail: user.mail,
+      jobTitle: user.jobTitle,
+      accountEnabled: user.accountEnabled,
+      source: user.source,
+      createdDateTime: user.createdDateTime,
+      givenName: user.givenName,
+      surname: user.surname,
+      officeLocation: user.officeLocation,
+      mobilePhone: user.mobilePhone,
+      businessPhones: user.businessPhones,
+      companyName: user.companyName,
+      employeeId: user.employeeId,
+      costCenter: user.costCenter,
+      division: user.division,
+      manager: user.manager
+    }));
+    console.log(`✅ HR fetchEmployeeData: Converted ${employees.length} users to hybrid Employee+CombinedUser format`);
 
     // Pagination anwenden
     const total = employees.length;
