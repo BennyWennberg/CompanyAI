@@ -15,5 +15,31 @@
     "createdAt": "2025-08-29T07:00:00.462Z",
     "updatedAt": "2025-08-29T07:28:50.027Z",
     "updatedBy": "admin@company.com"
+  },
+  {
+    "departmentId": "dept_einkauf",
+    "departmentName": "Einkauf",
+    "moduleAccess": {
+      "hr": "access"
+    },
+    "userOverrides": {
+      "a3981542-06f9-4f79-a6c0-113878967342": {
+        "hr": "access"
+      },
+      "cbf61381-74eb-4b3a-8a07-ea1b544f4e66": {
+        "hr": "access"
+      },
+      "425e174a-392e-4953-92dc-7285f09e1f2c": {
+        "hr": "access"
+      },
+      "062536f4-09f7-4ca0-b5a8-b5895dc595da": {
+        "hr": "access"
+      }
+    },
+    "isMainDepartment": true,
+    "createdAt": "2025-09-01T07:34:56.368Z",
+    "updatedAt": "2025-09-01T07:34:56.368Z",
+    "updatedBy": "admin@company.com",
+    "subGroups": {}
   }
 ]

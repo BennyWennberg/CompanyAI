@@ -194,6 +194,41 @@ const [Page]Page: React.FC = () => {
 5. ✅ Auth-Token bei allen API-Calls verwenden
 6. ✅ Responsive Design testen
 
+### Icon-Standards (PFLICHT)
+**Verwende IMMER Heroicons statt Emojis im Frontend:**
+```typescript
+// ✅ RICHTIG - Heroicons verwenden
+import { UserIcon, HomeIcon, ChartBarIcon, XMarkIcon } from '@heroicons/react/24/outline';
+
+const ExampleComponent = () => (
+  <button className="btn">
+    <UserIcon className="h-5 w-5" />
+    Benutzer verwalten
+  </button>
+);
+
+// ❌ FALSCH - Emojis verwenden  
+const BadExample = () => (
+  <button className="btn">
+    👥 Benutzer verwalten  // ❌ Keine Emojis!
+  </button>
+);
+```
+
+**Heroicons-Setup:**
+1. ✅ Package installieren: `npm install @heroicons/react`
+2. ✅ Import: `import { IconName } from '@heroicons/react/24/outline'` (für Outline-Style)
+3. ✅ Import: `import { IconName } from '@heroicons/react/24/solid'` (für Solid-Style)
+4. ✅ CSS-Klassen verwenden: `className="h-5 w-5"` für Größen
+5. ✅ Konsistente Icon-Größen: `h-4 w-4` (klein), `h-5 w-5` (normal), `h-6 w-6` (groß)
+
+**Standard-Icons für häufige Aktionen:**
+- Benutzer: `UserIcon`, `UsersIcon`
+- Navigation: `HomeIcon`, `ChevronRightIcon`, `Bars3Icon`
+- Aktionen: `PlusIcon`, `PencilIcon`, `TrashIcon`, `XMarkIcon`
+- Status: `CheckIcon`, `XMarkIcon`, `ExclamationTriangleIcon`
+- Dokumente: `DocumentIcon`, `FolderIcon`, `ArchiveBoxIcon`
+
 ### NICHT ERLAUBT (Frontend):
 ❌ Direkte Layout-Imports in Modulen  
 ❌ Inline-Styles statt CSS-Klassen  
@@ -201,6 +236,9 @@ const [Page]Page: React.FC = () => {
 ❌ Fehlende Loading-States  
 ❌ Module ohne Router-Integration  
 ❌ Authentifizierung umgehen
+❌ **Emojis statt Heroicons verwenden** 🚫
+❌ **Inkonsistente Icon-Größen** 
+❌ **Icons ohne CSS-Klassen für Sizing**
 
 ---
 ## 🔐 USER & PERMISSIONS SYSTEM

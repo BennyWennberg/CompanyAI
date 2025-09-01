@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CogIcon } from '@heroicons/react/24/outline';
 import '../styles/UsersPages.css';
 
 interface ManualUser {
@@ -764,7 +765,7 @@ const ManualUsersPage: React.FC = () => {
 
         {/* Account-Einstellungen */}
         <div className="form-section">
-          <h4>⚙️ Account-Einstellungen</h4>
+          <h4><CogIcon className="inline" /> Account-Einstellungen</h4>
           <div className="form-grid">
             <div className="form-group">
               <label>User Principal Name</label>
@@ -1038,7 +1039,7 @@ const ManualUsersPage: React.FC = () => {
 
               {/* Account-Einstellungen */}
               <div className="form-section">
-                <h4>⚙️ Account-Einstellungen</h4>
+                <h4><CogIcon className="inline" /> Account-Einstellungen</h4>
                 <div className="form-grid">
                   <div className="form-group">
                     <label>User Principal Name</label>

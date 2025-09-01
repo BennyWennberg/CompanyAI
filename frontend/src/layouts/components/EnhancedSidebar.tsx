@@ -6,11 +6,38 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useEnhancedPermissions, ModuleAccessGate, EnhancedPermissionDebugInfo, ModuleName } from '../../context/EnhancedPermissionContext';
 import './Sidebar.css';
 
+// Heroicons imports
+import {
+  ChartBarIcon,
+  CpuChipIcon,
+  ChatBubbleLeftIcon,
+  DocumentIcon,
+  ChatBubbleLeftRightIcon,
+  ClipboardDocumentListIcon,
+  PlusIcon,
+  UserIcon,
+  UsersIcon,
+  AcademicCapIcon,
+  ArrowTrendingUpIcon,
+  CogIcon,
+  ComputerDesktopIcon,
+  ArrowPathIcon,
+  ArrowUpTrayIcon,
+  ExclamationTriangleIcon,
+
+  PencilIcon,
+  ShieldCheckIcon,
+  ClipboardIcon,
+  StarIcon,
+  ArrowRightOnRectangleIcon,
+  MagnifyingGlassIcon
+} from '@heroicons/react/24/outline';
+
 // Navigation Item Interface für Enhanced System
 interface EnhancedNavigationItem {
   title: string;
   path: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   moduleKey: ModuleName;
   description?: string;
   submenu?: EnhancedNavigationSubItem[];
@@ -19,7 +46,7 @@ interface EnhancedNavigationItem {
 interface EnhancedNavigationSubItem {
   title: string;
   path: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   requiredLevel?: 'access' | 'admin';
 }
 
@@ -40,61 +67,61 @@ const EnhancedSidebar: React.FC = () => {
     {
       title: 'KI-Assistent',
       path: '/ai',
-      icon: '🤖',
+      icon: CpuChipIcon,
       moduleKey: 'ai',
       description: 'Chat-Assistenten und Dokumentenanalyse',
       submenu: [
-        { title: 'Chat', path: '/ai/chat', icon: '💬' },
-        { title: 'Dokumente (Upload)', path: '/ai/docs', icon: '📄' }
+        { title: 'Chat', path: '/ai/chat', icon: ChatBubbleLeftIcon },
+        { title: 'Dokumente (Upload)', path: '/ai/docs', icon: DocumentIcon }
       ]
     },
     {
       title: 'Support',
       path: '/support',
-      icon: '🎧',
+      icon: ChatBubbleLeftRightIcon,
       moduleKey: 'support',
       description: 'Ticket-Management und Kundensupport',
       submenu: [
-        { title: 'Alle Tickets', path: '/support/tickets', icon: '📋' },
-        { title: 'Neues Ticket', path: '/support/create', icon: '➕' },
-        { title: 'Meine Tickets', path: '/support/my-tickets', icon: '👤' },
-        { title: 'Dashboard', path: '/support/dashboard', icon: '📊' },
-        { title: 'Verwaltung', path: '/support/admin', icon: '⚙️', requiredLevel: 'admin' }
+        { title: 'Alle Tickets', path: '/support/tickets', icon: ClipboardDocumentListIcon },
+        { title: 'Neues Ticket', path: '/support/create', icon: PlusIcon },
+        { title: 'Meine Tickets', path: '/support/my-tickets', icon: UserIcon },
+        { title: 'Dashboard', path: '/support/dashboard', icon: ChartBarIcon },
+        { title: 'Verwaltung', path: '/support/admin', icon: CogIcon, requiredLevel: 'admin' }
       ]
     },
     {
       title: 'Personal',
       path: '/hr',
-      icon: '👥',
+      icon: UsersIcon,
       moduleKey: 'hr',
       description: 'Human Resources Management',
       submenu: [
-        { title: 'Mitarbeiter', path: '/hr/employees', icon: '👤' },
-        { title: 'Onboarding', path: '/hr/onboarding', icon: '🎯' },
-        { title: 'Berichte', path: '/hr/reports', icon: '📈' },
-        { title: 'Statistiken', path: '/hr/stats', icon: '📊' },
-        { title: 'Einstellungen', path: '/hr/settings', icon: '⚙️', requiredLevel: 'admin' }
+        { title: 'Mitarbeiter', path: '/hr/employees', icon: UserIcon },
+        { title: 'Onboarding', path: '/hr/onboarding', icon: AcademicCapIcon },
+        { title: 'Berichte', path: '/hr/reports', icon: ArrowTrendingUpIcon },
+        { title: 'Statistiken', path: '/hr/stats', icon: ChartBarIcon },
+        { title: 'Einstellungen', path: '/hr/settings', icon: CogIcon, requiredLevel: 'admin' }
       ]
     },
     {
       title: 'Admin-Portal',
       path: '/admin-portal',
-      icon: '⚙️',
+      icon: CogIcon,
       moduleKey: 'admin_portal',
       description: 'System-Administration und User-Management',
       submenu: [
-        { title: 'Dashboard', path: '/admin-portal/system/dashboard', icon: '📊' },
-        { title: 'Benutzer-Verwaltung', path: '/admin-portal/users', icon: '👥' },
-        { title: 'Users Overview', path: '/admin-portal/users/overview', icon: '👤' },
-        { title: 'Sync Management', path: '/admin-portal/users/sync', icon: '🔄', requiredLevel: 'admin' },
-        { title: 'Upload', path: '/admin-portal/users/upload', icon: '📤', requiredLevel: 'admin' },
-        { title: 'Manual Users', path: '/admin-portal/users/manual', icon: '✍️', requiredLevel: 'admin' },
-        { title: 'Conflicts', path: '/admin-portal/users/conflicts', icon: '⚠️', requiredLevel: 'admin' },
-        { title: 'Berechtigungen', path: '/admin-portal/permissions', icon: '🔐' },
-        { title: 'System-Statistiken', path: '/admin-portal/system/stats', icon: '⚙️' },
-        { title: 'RAG Status', path: '/admin-portal/system/rag', icon: '🔍', requiredLevel: 'admin' },
-        { title: 'Security & Compliance', path: '/admin-portal/system/security', icon: '🛡️', requiredLevel: 'admin' },
-        { title: 'Logging', path: '/admin-portal/system/logging', icon: '📋', requiredLevel: 'admin' }
+        { title: 'Dashboard', path: '/admin-portal/system/dashboard', icon: ChartBarIcon },
+        { title: 'Benutzer-Verwaltung', path: '/admin-portal/users', icon: UsersIcon },
+        { title: 'Users Overview', path: '/admin-portal/users/overview', icon: UserIcon },
+        { title: 'Sync Management', path: '/admin-portal/users/sync', icon: ArrowPathIcon, requiredLevel: 'admin' },
+        { title: 'Upload', path: '/admin-portal/users/upload', icon: ArrowUpTrayIcon, requiredLevel: 'admin' },
+        { title: 'Manual Users', path: '/admin-portal/users/manual', icon: PencilIcon, requiredLevel: 'admin' },
+        { title: 'Conflicts', path: '/admin-portal/users/conflicts', icon: ExclamationTriangleIcon, requiredLevel: 'admin' },
+        { title: 'Berechtigungen', path: '/admin-portal/permissions', icon: ShieldCheckIcon },
+        { title: 'System-Statistiken', path: '/admin-portal/system/stats', icon: ComputerDesktopIcon },
+        { title: 'RAG Status', path: '/admin-portal/system/rag', icon: MagnifyingGlassIcon, requiredLevel: 'admin' },
+        { title: 'Security & Compliance', path: '/admin-portal/system/security', icon: ShieldCheckIcon, requiredLevel: 'admin' },
+        { title: 'Logging', path: '/admin-portal/system/logging', icon: ClipboardIcon, requiredLevel: 'admin' }
       ]
     }
   ];
@@ -133,7 +160,7 @@ const EnhancedSidebar: React.FC = () => {
             to="/"
             className={({ isActive }) => `nav-link dashboard-link ${isActive ? 'active' : ''}`}
           >
-            <span className="nav-icon">📊</span>
+            <ChartBarIcon className="nav-icon" />
             <span className="nav-text">Dashboard</span>
           </NavLink>
         </div>
@@ -143,7 +170,7 @@ const EnhancedSidebar: React.FC = () => {
           <h3 className="nav-title">Module ({visibleNavigationItems.length})</h3>
           {visibleNavigationItems.length === 0 ? (
             <div className="no-modules-message">
-              <span className="icon">🚫</span>
+              <ExclamationTriangleIcon className="icon" />
               <span className="text">Keine Module verfügbar</span>
               <small>Kontaktieren Sie einen Administrator</small>
             </div>
@@ -158,7 +185,7 @@ const EnhancedSidebar: React.FC = () => {
                     }
                     title={item.description}
                   >
-                    <span className="nav-icon">{item.icon}</span>
+                    <item.icon className="nav-icon" />
                     <div className="nav-content">
                       <span className="nav-text">{item.title}</span>
                       <span className="nav-description">{item.description}</span>
@@ -167,9 +194,9 @@ const EnhancedSidebar: React.FC = () => {
                     {/* Access Level Indicator */}
                     <div className="access-indicators">
                       {hasAdminAccess(item.moduleKey) ? (
-                        <span className="access-badge admin" title="Administrator">👑</span>
+                        <StarIcon className="access-badge admin" title="Administrator" />
                       ) : (
-                        <span className="access-badge user" title="Basis-Zugriff">👤</span>
+                        <UserIcon className="access-badge user" title="Basis-Zugriff" />
                       )}
                       <span className="access-level">{getModuleLevel(item.moduleKey)}</span>
                     </div>
@@ -192,11 +219,9 @@ const EnhancedSidebar: React.FC = () => {
                                 `submenu-link ${isActive ? 'active' : ''}`
                               }
                             >
-                              <span className="submenu-icon">{subItem.icon}</span>
+                              <subItem.icon className="submenu-icon" />
                               <span className="submenu-text">{subItem.title}</span>
-                              {subItem.requiredLevel === 'admin' && (
-                                <span className="admin-required" title="Admin-Berechtigung erforderlich">🔒</span>
-                              )}
+
                             </NavLink>
                           </li>
                         </ModuleAccessGate>
@@ -224,7 +249,7 @@ const EnhancedSidebar: React.FC = () => {
               </div>
               <div className="user-stats">
                 <span className="stat-item">
-                  <span className="stat-icon">📊</span>
+                  <ChartBarIcon className="stat-icon" />
                   <span className="stat-text">{visibleModules.length} Module</span>
                 </span>
               </div>
@@ -238,7 +263,7 @@ const EnhancedSidebar: React.FC = () => {
               onClick={() => window.location.reload()}
               title="Permissions neu laden"
             >
-              🔄
+              <ArrowPathIcon className="quick-action-icon" />
             </button>
             <button 
               className="quick-action-btn"
@@ -248,7 +273,7 @@ const EnhancedSidebar: React.FC = () => {
               }}
               title="Abmelden"
             >
-              🚪
+              <ArrowRightOnRectangleIcon className="quick-action-icon" />
             </button>
           </div>
 
@@ -256,7 +281,7 @@ const EnhancedSidebar: React.FC = () => {
           {process.env.NODE_ENV === 'development' && (
             <details className="debug-section">
               <summary className="debug-toggle">
-                <span className="debug-icon">🔍</span>
+                <MagnifyingGlassIcon className="debug-icon" />
                 Debug Info
               </summary>
               <div className="debug-content">

@@ -14,7 +14,10 @@ import RequireAuth from './components/RequireAuth';
 import ErrorBoundary from './components/ErrorBoundary';
 import ThemeSettings from './components/ThemeSettings';
 import { EnhancedPermissionProvider, ModuleAccessGate } from './context/EnhancedPermissionContext';
+import './styles/design-system.css';
 import './components/EnhancedDashboard.css';
+import './layouts/components/Header.css';
+import './layouts/MainLayout.css';
 import './App.css';
 
 function App() {

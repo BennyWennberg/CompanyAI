@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { LockClosedIcon } from '@heroicons/react/24/outline';
 import TicketChat from '../components/TicketChat';
 import '../styles/SupportPages.css';
 
@@ -455,7 +456,7 @@ const TicketDetailPage: React.FC = () => {
                 className="btn btn-secondary"
                 onClick={() => updateTicketStatus('closed')}
               >
-                🔒 Schließen
+                <LockClosedIcon className="inline" /> Schließen
               </button>
             )}
           </div>
